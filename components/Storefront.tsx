@@ -72,11 +72,10 @@ export default function Storefront({ initialProducts, settings }:{
     <main>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">SKINCARE FOR EVERY BODY</p>
-          <h1>Healthy skin.<br/><em>Chosen for you.</em></h1>
-          <p>Carefully selected skincare, haircare and grooming essentials for women and men—delivered across Zambia.</p>
-          <div><a className="btn btn-primary" href="#shop">Shop collection</a></div>
-        </div>
+          <p className="eyebrow">PREMIUM BEAUTY FOR EVERYONE</p>
+<h1>Glow with confidence.<br/><em>Selected for you.</em></h1>
+<p>Quality skincare, haircare and grooming products for women and men, delivered across Zambia.</p>
+<div><a className="btn btn-primary" href="#shop">Shop now</a></div>
         <div className="hero-art"><div className="hero-orbit"><div className="hero-bottle">SELECT</div></div></div>
       </section>
 
