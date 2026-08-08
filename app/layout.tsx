@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
 import { AuthProvider } from "@/app/components/auth-provider";
 import { CartProvider } from "@/app/components/cart-provider";
 import { SiteShell } from "@/app/components/site-shell";
@@ -16,8 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lueur & Co",
-  description: "Modern beauty ecommerce experience built with Next.js, TypeScript, Tailwind CSS, and Supabase.",
+  title: "Skincare Select | Beauty for Everyone",
+  description:
+    "Skincare, haircare, grooming and fragrance products delivered across Zambia.",
 };
 
 export default function RootLayout({
@@ -30,7 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50">
+      <body>
         <AuthProvider>
           <CartProvider>
             <SiteShell>{children}</SiteShell>

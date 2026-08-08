@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function AdminNav(){
  const path=usePathname(); const router=useRouter();
- async function logout(){await createClient().auth.signOut();router.push("/admin/login");router.refresh()}
+ async function logout(){await createClient().auth.signOut();router.push("/login");router.refresh()}
  return <aside className="sidebar"><Link className="brand" href="/"><span className="brandmark">SS</span><b>Skincare Select</b></Link><nav>
   <Link className={path==="/admin"?"active":""} href="/admin">Overview</Link>
   <Link className={path.includes("/admin/products")?"active":""} href="/admin/products">Products</Link>

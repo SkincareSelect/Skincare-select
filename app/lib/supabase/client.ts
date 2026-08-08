@@ -13,20 +13,27 @@ export function getSupabaseBrowserClient() {
 
 export async function uploadProductImage(file: File) {
   const supabase = getSupabaseBrowserClient();
+
   if (!supabase) {
     return null;
   }
 
   const fileName = `${Date.now()}-${file.name}`;
-  const { error } = await supabase.storage.from("product-images").upload(fileName, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
+
+  const { error } = await supabase.storage
+    .from("product-images")
+    .upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
 
   if (error) {
     return null;
   }
 
-  const { data } = supabase.storage.from("product-images").getPublicUrl(fileName);
+  const { data } = supabase.storage
+    .from("product-images")
+    .getPublicUrl(fileName);
+
   return data.publicUrl;
 }

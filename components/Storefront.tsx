@@ -138,7 +138,7 @@ export default function Storefront({ initialProducts, settings }:{
 
     <footer className="footer"><div className="container footer-grid">
       <div><div className="brand"><span className="brandmark">SS</span><span>Skincare Select</span></div><p>Beauty and grooming essentials for everyone.</p></div>
-      <div><b>Customer care</b><p>WhatsApp: {store.whatsapp}</p><a href="/admin/login">Store administration</a></div>
+      <div><b>Customer care</b><p>WhatsApp: {store.whatsapp}</p><a href="/login">Store administration</a></div>
       <div><b>Payments</b><p>MTN MoMo<br/>Airtel Money<br/>Zamtel Kwacha<br/>Bank transfer</p></div>
     </div></footer>
 

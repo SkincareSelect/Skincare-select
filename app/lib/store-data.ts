@@ -1,12 +1,44 @@
 import type { AnalyticsEntry, AnalyticsPeriod, Order, Payment, Product, ProductCategory, StoreSettings } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 
-export const categories: Array<{ label: ProductCategory; description: string }> = [
-  { label: "Face Care", description: "Glow, hydrate, and balance your skin." },
-  { label: "Body Care", description: "Luxurious essentials for healthy skin." },
-  { label: "Hair Care", description: "Nourishing formulas for every texture." },
-  { label: "Men's Grooming", description: "Smart, confident daily essentials." },
+export const categories: Array<{
+  label: ProductCategory;
+  description: string;
+}> = [
+  {
+    label: "Face Care",
+    description: "Cleansers, serums, moisturizers and essentials for healthy glowing skin.",
+  },
+  {
+    label: "Body Care",
+    description: "Lotions, body washes, oils and everyday body care essentials.",
+  },
+  {
+    label: "Hair Care",
+    description: "Shampoos, conditioners, treatments and nourishing formulas for every texture.",
+  },
+  {
+    label: "Hair",
+    description: "Quality wigs, extensions, braids and beautiful hair options for every style.",
+  },
+  {
+    label: "Men's Grooming",
+    description: "Beard care, shaving, skincare and everyday grooming essentials for men.",
+  },
+  {
+    label: "Women's Perfume",
+    description: "Elegant fragrances for women, from everyday scents to signature perfumes.",
+  },
+  {
+    label: "Men's Perfume",
+    description: "Fresh, bold and sophisticated fragrances for men.",
+  },
+  {
+    label: "Baby Care",
+    description: "Gentle skincare, bath and everyday care essentials made for babies.",
+  },
 ];
+
 
 export const validReferralCodes = [
   { code: "LUEUR10", discountPercent: 10, label: "10% welcome reward" },

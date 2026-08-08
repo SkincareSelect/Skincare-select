@@ -1,4 +1,13 @@
-export type ProductCategory = "Face Care" | "Body Care" | "Hair Care" | "Men's Grooming" | "Makeup" | "Fragrances" | "Accessories";
+
+  export type ProductCategory =
+  | "Face Care"
+  | "Body Care"
+  | "Hair Care"
+  | "Hair"
+  | "Men's Grooming"
+  | "Women's Perfume"
+  | "Men's Perfume"
+  | "Baby Care";
 
 export type OrderStatus =
   | "Pending Payment"

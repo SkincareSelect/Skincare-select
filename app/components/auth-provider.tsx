@@ -1,185 +1,307 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import type { AuthUser } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; message: string }>;
   signUp: (
     email: string,
     password: string,
-    options?: { name?: string; role?: "customer" | "admin" },
+    options?: { name?: string }
   ) => Promise<{ ok: boolean; message: string }>;
-  resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
-  signOut: () => void;
+  resetPassword: (
+    email: string
+  ) => Promise<{ ok: boolean; message: string }>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const STORAGE_KEY = "lueur-co-auth";
-const USERS_KEY = "lueur-co-users";
 
-function getStoredUsers(): Array<{ email: string; password: string; name: string; role: "customer" | "admin" }> {
-  if (typeof window === "undefined") {
-    return [];
-  }
+const STORAGE_KEY = "skincare-select-auth";
 
-  try {
-    return JSON.parse(window.localStorage.getItem(USERS_KEY) ?? "[]") as Array<{
-      email: string;
-      password: string;
-      name: string;
-      role: "customer" | "admin";
-    }>;
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredUsers(users: Array<{ email: string; password: string; name: string; role: "customer" | "admin" }>) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const storedUser = window.localStorage.getItem(STORAGE_KEY);
-    if (storedUser) {
-      setUser(JSON.parse(storedUser) as AuthUser);
-    }
-    setLoading(false);
-  }, []);
-
   const persistUser = (nextUser: AuthUser | null) => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (nextUser) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY);
+    if (typeof window !== "undefined") {
+      if (nextUser) {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(nextUser)
+        );
+      } else {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
     }
 
     setUser(nextUser);
   };
 
-  const signIn = async (email: string, password: string) => {
+  const getProfile = async (userId: string) => {
     const supabase = getSupabaseBrowserClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (!error && data.user) {
-          const nextUser: AuthUser = {
-            id: data.user.id,
-            email: data.user.email ?? email,
-            name: data.user.user_metadata?.full_name ?? email.split("@")[0],
-            role: email.includes("admin") ? "admin" : "customer",
-          };
-          persistUser(nextUser);
-          return { ok: true, message: "Signed in successfully." };
-        }
-      } catch {
-        // Fall back to the demo/local experience when Supabase is unavailable.
-      }
+
+    if (!supabase) {
+      return null;
     }
 
-    const storedUsers = getStoredUsers();
-    const match = storedUsers.find((candidate) => candidate.email === email && candidate.password === password);
-    if (match) {
-      const nextUser: AuthUser = { id: `${email}-local`, email, name: match.name, role: match.role };
-      persistUser(nextUser);
-      return { ok: true, message: "Signed in successfully." };
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name, role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("PROFILE ERROR:", error);
+      return null;
     }
 
-    if (email === "admin@example.com" && password === "password123") {
-      const nextUser: AuthUser = { id: "admin-demo", email, name: "Demo Admin", role: "admin" };
-      persistUser(nextUser);
-      return { ok: true, message: "Signed in as the demo admin." };
-    }
-
-    return { ok: false, message: "We could not find that account. Try signing up first." };
+    return data;
   };
 
-  const signUp = async (email: string, password: string, options?: { name?: string; role?: "customer" | "admin" }) => {
+  const loadSupabaseUser = async () => {
     const supabase = getSupabaseBrowserClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: options?.name ?? email.split("@")[0] } } });
-        if (!error && data.user) {
-          const nextUser: AuthUser = {
-            id: data.user.id,
-            email: data.user.email ?? email,
-            name: options?.name ?? email.split("@")[0],
-            role: options?.role ?? "customer",
-          };
-          persistUser(nextUser);
-          return { ok: true, message: "Account created successfully." };
-        }
-      } catch {
-        // Fall back to local storage registration.
+
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const {
+        data: { user: authUser },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error || !authUser) {
+        persistUser(null);
+        return;
       }
+
+      const profile = await getProfile(authUser.id);
+
+      const nextUser: AuthUser = {
+        id: authUser.id,
+        email: authUser.email ?? "",
+        name:
+          profile?.full_name ||
+          authUser.user_metadata?.full_name ||
+          authUser.email?.split("@")[0] ||
+          "User",
+        role: profile?.role === "admin" ? "admin" : "customer",
+      };
+
+      persistUser(nextUser);
+    } catch (error) {
+      console.error("AUTH LOAD ERROR:", error);
+      persistUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSupabaseUser();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return {
+        ok: false,
+        message: "Supabase is not configured.",
+      };
     }
 
-    const storedUsers = getStoredUsers();
-    const existing = storedUsers.find((candidate) => candidate.email === email);
-    if (existing) {
-      return { ok: false, message: "An account already exists for that email." };
+    try {
+      setLoading(true);
+
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (error || !data.user) {
+        return {
+          ok: false,
+          message: error?.message ?? "Unable to sign in.",
+        };
+      }
+
+      const profile = await getProfile(data.user.id);
+
+      const nextUser: AuthUser = {
+        id: data.user.id,
+        email: data.user.email ?? email,
+        name:
+          profile?.full_name ||
+          data.user.user_metadata?.full_name ||
+          email.split("@")[0],
+        role: profile?.role === "admin" ? "admin" : "customer",
+      };
+
+      persistUser(nextUser);
+
+      return {
+        ok: true,
+        message: "Signed in successfully.",
+      };
+    } catch (error) {
+      console.error("SIGN IN ERROR:", error);
+
+      return {
+        ok: false,
+        message: "Unable to sign in.",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUp = async (
+    email: string,
+    password: string,
+    options?: { name?: string }
+  ) => {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return {
+        ok: false,
+        message: "Supabase is not configured.",
+      };
     }
 
-    const nextUser: AuthUser = {
-      id: `${email}-local`,
-      email,
-      name: options?.name ?? email.split("@")[0],
-      role: options?.role ?? "customer",
-    };
-    saveStoredUsers([...storedUsers, { email, password, name: nextUser.name, role: nextUser.role }]);
-    persistUser(nextUser);
-    return { ok: true, message: "Account created successfully." };
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: options?.name ?? email.split("@")[0],
+          },
+        },
+      });
+
+      if (error) {
+        return {
+          ok: false,
+          message: error.message,
+        };
+      }
+
+      if (!data.user) {
+        return {
+          ok: false,
+          message: "Account could not be created.",
+        };
+      }
+
+      return {
+        ok: true,
+        message: "Account created successfully. You can now sign in.",
+      };
+    } catch (error) {
+      console.error(error);
+
+      return {
+        ok: false,
+        message: "Unable to create account.",
+      };
+    }
   };
 
   const resetPassword = async (email: string) => {
     const supabase = getSupabaseBrowserClient();
-    if (supabase) {
-      try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
-        if (!error) {
-          return { ok: true, message: "Password reset instructions were sent." };
-        }
-      } catch {
-        // Fall back to demo guidance.
-      }
+
+    if (!supabase) {
+      return {
+        ok: false,
+        message: "Supabase is not configured.",
+      };
     }
 
-    return {
-      ok: true,
-      message: `Password reset guidance has been prepared for ${email}.`,
-    };
+    try {
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(email);
+
+      if (error) {
+        return {
+          ok: false,
+          message: error.message,
+        };
+      }
+
+      return {
+        ok: true,
+        message: "Password reset instructions were sent.",
+      };
+    } catch (error) {
+      console.error(error);
+
+      return {
+        ok: false,
+        message: "Unable to send password reset instructions.",
+      };
+    }
   };
 
-  const signOut = () => persistUser(null);
+  const signOut = async () => {
+    const supabase = getSupabaseBrowserClient();
 
-  const value = useMemo<AuthContextValue>(() => ({ user, loading, signIn, signUp, resetPassword, signOut }), [loading, user]);
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    persistUser(null);
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      signIn,
+      signUp,
+      resetPassword,
+      signOut,
+    }),
+    [user, loading]
+  );
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
+
   if (!context) {
-    throw new Error("useAuth must be used inside an AuthProvider");
+    throw new Error(
+      "useAuth must be used inside an AuthProvider"
+    );
   }
 
   return context;
