@@ -30,17 +30,17 @@ export async function sendDealsEmail(): Promise<DealsResult> {
 
   const { data: products, error: productsError } = await admin
     .from("products")
-    .select("name, price, compare_at_price, badge, image_url")
-    .eq("is_active", true)
-    .not("compare_at_price", "is", null)
-    .order("compare_at_price", { ascending: false });
+    .select('name, price, "originalPrice", badge, image, slug, hidden')
+    .not("hidden", "is", true)
+    .not("originalPrice", "is", null)
+    .order("originalPrice", { ascending: false });
 
   if (productsError) {
     return { ok: false, message: productsError.message };
   }
 
   const deals = (products || []).filter(
-    (p) => p.compare_at_price && Number(p.compare_at_price) > Number(p.price)
+    (p) => p.originalPrice && Number(p.originalPrice) > Number(p.price)
   );
 
   if (deals.length === 0) {
@@ -70,12 +70,12 @@ export async function sendDealsEmail(): Promise<DealsResult> {
   const dealsHtml = deals
     .map((p) => {
       const off = Math.round(
-        ((Number(p.compare_at_price) - Number(p.price)) / Number(p.compare_at_price)) * 100
+        ((Number(p.originalPrice) - Number(p.price)) / Number(p.originalPrice)) * 100
       );
       return `<tr>
         <td style="padding:12px 0;border-bottom:1px solid #eee;">
           <strong>${p.name}</strong>${p.badge ? ` <span style="color:#c2410c;">(${p.badge})</span>` : ""}<br/>
-          <span style="text-decoration:line-through;color:#999;">K${Number(p.compare_at_price).toFixed(2)}</span>
+          <span style="text-decoration:line-through;color:#999;">K${Number(p.originalPrice).toFixed(2)}</span>
           &nbsp;
           <span style="color:#166534;font-weight:700;">K${Number(p.price).toFixed(2)}</span>
           &nbsp;<span style="color:#166534;">(${off}% off)</span>
@@ -93,13 +93,13 @@ export async function sendDealsEmail(): Promise<DealsResult> {
       <p>Here's what's currently on discount at Zhurie &amp; Co:</p>
       <table style="width:100%;border-collapse:collapse;">${dealsHtml}</table>
       <p style="margin-top:24px;">
-        <a href="${siteUrl}/shop" style="background:#111827;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;">Shop the deals</a>
+        <a href="${siteUrl}/deals" style="background:#111827;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;">Shop the deals</a>
       </p>
       <p style="color:#888;font-size:12px;margin-top:32px;">You're receiving this because you have an account with Zhurie &amp; Co.</p>
     </div>`,
     text: `Deals at Zhurie & Co:\n${deals
-      .map((p) => `${p.name}: K${Number(p.compare_at_price).toFixed(2)} -> K${Number(p.price).toFixed(2)}`)
-      .join("\n")}\n\nShop now: ${siteUrl}/shop`,
+      .map((p) => `${p.name}: K${Number(p.originalPrice).toFixed(2)} -> K${Number(p.price).toFixed(2)}`)
+      .join("\n")}\n\nShop now: ${siteUrl}/deals`,
   }));
 
   const sent = results.filter((r) => r.ok).length;
