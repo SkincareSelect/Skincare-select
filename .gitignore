@@ -1,12 +1,4 @@
-cd c:\Users\iGstores\Documents\Skincare_Select\skincare-select
-Get-ChildItem -Path app -Recurse -Filter "*.tsx" | Select-Object FullName{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  }
-}# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/ for more about files to ignore.
 
 # dependencies
 /node_modules
@@ -44,3 +36,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# TypeScript build cache
+tsconfig.tsbuildinfo

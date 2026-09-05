@@ -1,9 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { deleteProduct, saveProduct } from "./actions";
 import ProductImageUpload from "@/components/ProductImageUpload";
+import { requireAdmin } from "@/lib/supabase/require-admin";
+import SendDealsButton from "./send-deals-button";
+
+type AdminProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  price: number;
+  compare_at_price: number | null;
+  stock: number;
+  badge: string | null;
+  image_url: string | null;
+  is_active: boolean;
+};
 
 export default async function Products() {
-  const s = await createClient();
+  const s = await requireAdmin();
 
   const { data = [] } = await s
     .from("products")
@@ -17,6 +32,7 @@ export default async function Products() {
           <p className="eyebrow">CATALOGUE</p>
           <h1>Products</h1>
         </div>
+        <SendDealsButton />
       </div>
 
       <details className="panel" style={{ marginBottom: 20 }}>
@@ -41,7 +57,7 @@ export default async function Products() {
           </thead>
 
           <tbody>
-            {(data || []).map((p: any) => (
+            {(data || []).map((p: AdminProduct) => (
               <tr key={p.id}>
                 <td>
                   <b>{p.name}</b>
@@ -83,7 +99,7 @@ export default async function Products() {
   );
 }
 
-function ProductForm({ product }: { product?: any }) {
+function ProductForm({ product }: { product?: AdminProduct }) {
   return (
     <form
       action={saveProduct}
@@ -105,7 +121,7 @@ function ProductForm({ product }: { product?: any }) {
         Description
         <textarea
           name="description"
-          defaultValue={product?.description}
+          defaultValue={product?.description ?? ""}
         />
       </label>
 
@@ -120,9 +136,9 @@ function ProductForm({ product }: { product?: any }) {
             <option>Body Care</option>
             <option>Hair Care</option>
             <option>Hair</option>
-            <option>Men's Grooming</option>
-            <option>Women's Perfume</option>
-            <option>Men's Perfume</option>
+            <option>Men&apos;s Grooming</option>
+            <option>Women&apos;s Perfume</option>
+            <option>Men&apos;s Perfume</option>
           </select>
         </label>
 
@@ -145,7 +161,7 @@ function ProductForm({ product }: { product?: any }) {
             type="number"
             step=".01"
             min="0"
-            defaultValue={product?.compare_at_price}
+            defaultValue={product?.compare_at_price ?? ""}
           />
         </label>
 
@@ -164,7 +180,7 @@ function ProductForm({ product }: { product?: any }) {
           Badge
           <input
             name="badge"
-            defaultValue={product?.badge}
+            defaultValue={product?.badge ?? ""}
           />
         </label>
       </div>

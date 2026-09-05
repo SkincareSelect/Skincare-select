@@ -104,7 +104,7 @@ create table if not exists public.addresses (
 
 create table if not exists public.store_settings (
   id uuid primary key default uuid_generate_v4(),
-  store_name text not null default 'Lueur & Co',
+  store_name text not null default 'Zhurie & Co',
   store_logo text,
   whatsapp_number text,
   payment_numbers jsonb not null default '{}'::jsonb,

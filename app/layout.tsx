@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Skincare Select | Beauty for Everyone",
+  title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
   description:
-    "Skincare, haircare, grooming and fragrance products delivered across Zambia.",
+    "Premium skincare, beauty, grooming, fragrance and personal-care products for women, men and families across Zambia.",
 };
 
 export default function RootLayout({

@@ -1,4 +1,4 @@
--- Lueur & Co Ecommerce Database Schema
+-- Zhurie & Co Ecommerce Database Schema
 -- Compatible with Supabase PostgreSQL
 -- Run this in the Supabase SQL editor.
 
@@ -18,6 +18,31 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, full_name, email)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
+    new.email
+  )
+  on conflict (id) do update
+    set email = excluded.email,
+        full_name = coalesce(public.profiles.full_name, excluded.full_name);
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 create table if not exists public.addresses (
   id uuid primary key default uuid_generate_v4(),
@@ -203,7 +228,7 @@ create table if not exists public.cart (
 -- =========================
 create table if not exists public.store_settings (
   id uuid primary key default uuid_generate_v4(),
-  store_name text not null default 'Lueur & Co',
+  store_name text not null default 'Zhurie & Co',
   store_logo text,
   whatsapp_number text,
   payment_numbers jsonb not null default '{}'::jsonb,
@@ -301,6 +326,23 @@ for each row execute function public.set_updated_at();
 -- =========================
 -- 8. Row Level Security (RLS)
 -- =========================
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
 alter table public.profiles enable row level security;
 alter table public.addresses enable row level security;
 alter table public.categories enable row level security;
@@ -330,7 +372,7 @@ drop policy if exists "public_read_discounts" on public.discounts;
 drop policy if exists "public_read_reviews" on public.reviews;
 drop policy if exists "public_read_store_settings" on public.store_settings;
 
-create policy "public_read_profiles" on public.profiles for select using (true);
+create policy "public_read_profiles" on public.profiles for select to authenticated using (auth.uid() = id or public.is_admin());
 create policy "public_read_categories" on public.categories for select using (true);
 create policy "public_read_brands" on public.brands for select using (true);
 create policy "public_read_products" on public.products for select using (true);
@@ -367,25 +409,25 @@ for all to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
--- Orders and payments are readable/writable by authenticated users
+-- Customers create orders through the server API. Admins manage orders and payments.
 drop policy if exists "authenticated_manage_orders" on public.orders;
 drop policy if exists "authenticated_manage_order_items" on public.order_items;
 drop policy if exists "authenticated_manage_payments" on public.payments;
 
-create policy "authenticated_manage_orders" on public.orders
+create policy "admins_manage_orders" on public.orders
 for all to authenticated
-using (true)
-with check (true);
+using (public.is_admin())
+with check (public.is_admin());
 
-create policy "authenticated_manage_order_items" on public.order_items
+create policy "admins_manage_order_items" on public.order_items
 for all to authenticated
-using (true)
-with check (true);
+using (public.is_admin())
+with check (public.is_admin());
 
-create policy "authenticated_manage_payments" on public.payments
+create policy "admins_manage_payments" on public.payments
 for all to authenticated
-using (true)
-with check (true);
+using (public.is_admin())
+with check (public.is_admin());
 
 -- Admin policies for management operations
 drop policy if exists "admins_manage_categories" on public.categories;
@@ -398,38 +440,38 @@ drop policy if exists "admins_manage_discounts" on public.discounts;
 
 create policy "admins_manage_categories" on public.categories
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 create policy "admins_manage_brands" on public.brands
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 create policy "admins_manage_products" on public.products
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 create policy "admins_manage_inventory" on public.inventory
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 create policy "admins_manage_store_settings" on public.store_settings
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 create policy "admins_manage_banners" on public.banners
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 create policy "admins_manage_discounts" on public.discounts
 for all to authenticated
-using (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin')
-with check (coalesce((auth.jwt() ->> 'role'),'customer') = 'admin');
+using (public.is_admin())
+with check (public.is_admin());
 
 -- =========================
 -- 9. Storage bucket setup helpers
@@ -493,11 +535,11 @@ insert into public.store_settings (
   business_hours,
   social_links
 ) values (
-  'Lueur & Co',
+  'Zhurie & Co',
   '',
   '+260977000000',
   '{"MTN Mobile Money":"+260770000001","Airtel Money":"+260960000001","Zamtel Money":"+260950000001","Bank Transfer":"0101234567","Cash on Delivery":""}',
-  '{"accountName":"Lueur & Co Zambia","accountNumber":"0101234567","bankName":"Zanaco","branch":"Lusaka","swiftCode":"ZANAZMLU"}',
+  '{"accountName":"Zhurie & Co Zambia","accountNumber":"0101234567","bankName":"Zanaco","branch":"Lusaka","swiftCode":"ZANAZMLU"}',
   'hello@lueurco.co.zm',
   '+260977000000',
   20,

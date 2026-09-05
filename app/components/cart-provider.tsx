@@ -14,7 +14,7 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
-const STORAGE_KEY = "lueur-co-cart";
+const STORAGE_KEY = "skincare-select-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -25,8 +25,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setItems(JSON.parse(stored) as CartItem[]);
+    if (!stored) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as CartItem[];
+      if (Array.isArray(parsed)) {
+        window.setTimeout(() => setItems(parsed), 0);
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 

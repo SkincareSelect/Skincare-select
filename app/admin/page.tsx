@@ -1,25 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/components/auth-provider";
 import { getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
 import { uploadProductImage } from "@/app/lib/supabase/client";
-import { deleteProductFromSupabase, fetchPaymentsFromSupabase, upsertOrderToSupabase, upsertPaymentToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
-import type { Order, Payment, OrderStatus, PaymentStatus, PaymentMethod, Product, StoreSettings } from "@/app/lib/types";
+import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
+import type { Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
 
-const statusOptions: OrderStatus[] = ["Pending Payment", "Paid", "Confirmed", "Processing", "Ready for Dispatch", "Dispatched", "Delivered", "Cancelled"];
-const paymentMethods: PaymentMethod[] = ["MTN Mobile Money", "Airtel Money", "Zamtel Money", "Bank Transfer", "Cash on Delivery"];
+const statusOptions: OrderStatus[] = ["Payment Pending", "Payment Confirmed", "Processing", "Ready for Delivery", "Ready for Dispatch", "Dispatched", "Delivered", "Cancelled"];
 
 const statusStyles: Record<OrderStatus, string> = {
-  "Pending Payment": "bg-amber-100 text-amber-700 border-amber-200",
-  Paid: "bg-sky-100 text-sky-700 border-sky-200",
-  Confirmed: "bg-violet-100 text-violet-700 border-violet-200",
+  Pending: "bg-amber-100 text-amber-700 border-amber-200",
+  "Payment Pending": "bg-amber-100 text-amber-700 border-amber-200",
+  "Payment Confirmed": "bg-sky-100 text-sky-700 border-sky-200",
   Processing: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "Ready for Delivery": "bg-violet-100 text-violet-700 border-violet-200",
   "Ready for Dispatch": "bg-cyan-100 text-cyan-700 border-cyan-200",
   Dispatched: "bg-orange-100 text-orange-700 border-orange-200",
   Delivered: "bg-emerald-100 text-emerald-700 border-emerald-200",
   Cancelled: "bg-rose-100 text-rose-700 border-rose-200",
+  Refunded: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 const formatOrderDate = (value?: string) => {
@@ -43,14 +45,16 @@ const formatOrderDate = (value?: string) => {
 
 const orderStatusCounts = (list: Order[]) => {
   const counts: Record<OrderStatus, number> = {
-    "Pending Payment": 0,
-    Paid: 0,
-    Confirmed: 0,
+    Pending: 0,
+    "Payment Pending": 0,
+    "Payment Confirmed": 0,
     Processing: 0,
+    "Ready for Delivery": 0,
     "Ready for Dispatch": 0,
     Dispatched: 0,
     Delivered: 0,
     Cancelled: 0,
+    Refunded: 0,
   };
 
   list.forEach((order) => {
@@ -62,9 +66,10 @@ const orderStatusCounts = (list: Order[]) => {
 
 export default function AdminPage() {
   const { user, loading } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>(getProducts);
+  const [orders, setOrders] = useState<Order[]>(getOrders);
+  const [payments, setPayments] = useState<Payment[]>(getPayments);
   const [settings, setSettings] = useState<StoreSettings>(getSettings());
   const [draftProduct, setDraftProduct] = useState<Partial<Product>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -73,6 +78,12 @@ export default function AdminPage() {
   const [orderFilter, setOrderFilter] = useState<"All" | OrderStatus>("All");
   const [orderSearch, setOrderSearch] = useState("");
   const [orderRange, setOrderRange] = useState<"All" | "Today" | "7 days" | "30 days">("All");
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/admin/login");
+    }
+  }, [loading, router, user]);
 
   const referralSummary = useMemo(() => getReferralSummary(orders), [orders]);
   const analyticsSummary = useMemo(() => getAnalyticsSummary(), []);
@@ -138,7 +149,7 @@ export default function AdminPage() {
       if (order.status !== "Delivered" && order.status !== "Cancelled") {
         summary.openOrders += 1;
       }
-      if (order.status === "Pending Payment") {
+      if (order.status === "Payment Pending") {
         summary.pendingPayments += 1;
       }
     });
@@ -147,7 +158,7 @@ export default function AdminPage() {
   }, [orders]);
 
   const pendingDispatchOrders = useMemo(() =>
-    orders.filter((order) => ["Confirmed", "Processing", "Ready for Dispatch", "Dispatched"].includes(order.status)),
+    orders.filter((order) => ["Payment Confirmed", "Processing", "Ready for Delivery", "Ready for Dispatch", "Dispatched"].includes(order.status)),
     [orders],
   );
 
@@ -219,16 +230,29 @@ export default function AdminPage() {
   }, [orderFilter, orderRange, orderSearch, orders]);
 
   useEffect(() => {
-    setProducts(getProducts());
-    setOrders(getOrders());
-    setPayments(getPayments());
-    setSettings(getSettings());
-
     void (async () => {
-      const remotePayments = await fetchPaymentsFromSupabase();
+      const [remoteProducts, remoteOrders, remotePayments, remoteSettings] = await Promise.all([
+        fetchProductsFromSupabase(),
+        fetchOrdersFromSupabase(),
+        fetchPaymentsFromSupabase(),
+        fetchSettingsFromSupabase(),
+      ]);
+
+      if (remoteProducts.length > 0) {
+        setProducts(remoteProducts);
+        saveProducts(remoteProducts);
+      }
+      if (remoteOrders.length > 0) {
+        setOrders(remoteOrders);
+        saveOrders(remoteOrders);
+      }
       if (remotePayments.length > 0) {
         setPayments(remotePayments);
         savePayments(remotePayments);
+      }
+      if (remoteSettings) {
+        setSettings(remoteSettings);
+        saveSettings(remoteSettings);
       }
     })();
   }, []);
@@ -257,7 +281,7 @@ export default function AdminPage() {
       description: draftProduct.description ?? "",
       shortDescription: draftProduct.shortDescription ?? "",
       benefits: draftProduct.benefits ?? [],
-      tag: draftProduct.tag ?? "New",
+      badge: draftProduct.badge ?? "NEW",
       stock: draftProduct.stock ?? 0,
       image: draftProduct.image ?? "🧴",
       featured: draftProduct.featured ?? false,
@@ -291,7 +315,11 @@ export default function AdminPage() {
     );
     setPayments(nextPayments);
     savePayments(nextPayments);
-    void upsertPaymentToSupabase(nextPayments.find((payment) => payment.id === id) as Payment);
+    void fetch("/api/admin/payments", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payment_id: id, status }),
+    });
   };
 
   const updateOrderNotes = (id: string, notes: string) => {
@@ -372,7 +400,7 @@ export default function AdminPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Lueur & Co order summary</title>
+          <title>Zhurie & Co order summary</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
             h1 { margin-bottom: 20px; }
@@ -380,7 +408,7 @@ export default function AdminPage() {
           </style>
         </head>
         <body>
-          <h1>Lueur & Co Order Summary</h1>
+          <h1>Zhurie & Co Order Summary</h1>
           ${content}
         </body>
       </html>
@@ -399,7 +427,7 @@ export default function AdminPage() {
     }
 
     const message = encodeURIComponent(
-      `Hi ${order.customerName}, this is Lueur & Co. We are following up on your order ${order.id}. Current status: ${order.status}. Thank you!`,
+      `Hi ${order.customerName}, this is Zhurie & Co. We are following up on your order ${order.id}. Current status: ${order.status}. Thank you!`,
     );
 
     window.open(`https://wa.me/${rawNumber}?text=${message}`, "_blank", "noopener,noreferrer");
@@ -482,13 +510,13 @@ export default function AdminPage() {
               <input placeholder="Price" type="number" value={draftProduct.price ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, price: Number(event.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <input placeholder="Stock" type="number" value={draftProduct.stock ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, stock: Number(event.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <select value={draftProduct.category ?? "Face Care"} onChange={(event) => setDraftProduct((current) => ({ ...current, category: event.target.value as Product["category"] }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3">
-                {["Face Care", "Body Care", "Hair Care", "Men's Grooming"].map((category) => (
+                {["Face Care", "Body Care", "Hair Care", "Men's Grooming", "Makeup", "Fragrances", "Accessories", "Baby Care"].map((category) => (
                   <option key={category} value={category}>
                     {category}
                   </option>
                 ))}
               </select>
-              <input placeholder="Tag" value={draftProduct.tag ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, tag: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+              <input placeholder="Badge" value={draftProduct.badge ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, badge: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <input placeholder="Image emoji" value={draftProduct.image ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, image: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <label className="block text-sm font-medium text-slate-700">Upload product image</label>
               <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full rounded-2xl border border-dashed border-slate-200 px-3 py-2 text-sm" />
@@ -801,7 +829,7 @@ export default function AdminPage() {
                   <p className="mt-2 text-sm text-slate-500">Reference: {payment.reference || "Not available"}</p>
                   <p className="mt-2 text-sm font-semibold text-slate-900">Created: {new Date(payment.createdAt).toLocaleString()}</p>
                   <select value={payment.status} onChange={(event) => updatePaymentStatus(payment.id, event.target.value as PaymentStatus)} className="mt-3 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm">
-                    {['Pending', 'Completed', 'Failed', 'Refunded'].map((status) => (
+                    {["pending", "processing", "paid", "failed", "cancelled", "awaiting_bank_verification", "refunded"].map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>

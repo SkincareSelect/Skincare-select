@@ -1,4 +1,4 @@
--- Cleanup script for Lueur & Co Supabase schema
+-- Cleanup script for Zhurie & Co Supabase schema
 -- Run this before schema-extended.sql if you want a clean rebuild.
 -- This removes the tables, policies, triggers, and functions created by schema-extended.sql.
 

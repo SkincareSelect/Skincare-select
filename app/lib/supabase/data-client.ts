@@ -26,7 +26,28 @@ export async function fetchOrdersFromSupabase() {
     return [] as Order[];
   }
 
-  return data as Order[];
+  return data.map((row) => ({
+    id: row.id,
+    orderNumber: row.order_number,
+    customerName: row.customer_name,
+    customerEmail: row.email ?? "",
+    customerPhone: row.phone ?? undefined,
+    items: Array.isArray(row.items)
+      ? row.items
+      : [],
+    subtotal: Number(row.subtotal) || 0,
+    deliveryFee: Number(row.delivery_fee) || 0,
+    discount: 0,
+    total: Number(row.total) || 0,
+    status: row.status,
+    paymentMethod: row.payment_method,
+    paymentStatus: "pending",
+    shippingAddress: [row.address, row.city, row.province].filter(Boolean).join(", "),
+    city: row.city ?? undefined,
+    referralCode: row.referral_code ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+  })) as Order[];
 }
 
 export async function fetchPaymentsFromSupabase() {
@@ -40,7 +61,17 @@ export async function fetchPaymentsFromSupabase() {
     return [] as Payment[];
   }
 
-  return data as Payment[];
+  return data.map((row) => ({
+    id: row.id,
+    orderId: row.order_id,
+    paymentMethod: row.payment_method,
+    reference: row.reference ?? "",
+    providerTransactionId: row.provider_transaction_id ?? undefined,
+    amount: Number(row.amount) || 0,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  })) as Payment[];
 }
 
 export async function upsertPaymentToSupabase(payment: Payment) {

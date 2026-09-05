@@ -69,12 +69,17 @@ export function AuthProvider({
       .eq("id", userId)
       .maybeSingle();
 
-    if (error) {
-      console.error("PROFILE ERROR:", error);
+    if (!error) {
+      return data;
+    }
+
+    console.error("PROFILE ERROR:", error);
+    const response = await fetch("/api/auth/admin-status", { cache: "no-store" });
+    if (!response.ok) {
       return null;
     }
 
-    return data;
+    return response.json();
   };
 
   const loadSupabaseUser = async () => {
@@ -106,7 +111,7 @@ export function AuthProvider({
           authUser.user_metadata?.full_name ||
           authUser.email?.split("@")[0] ||
           "User",
-        role: profile?.role === "admin" ? "admin" : "customer",
+        role: profile?.role === "admin" || authUser.app_metadata?.role === "admin" ? "admin" : "customer",
       };
 
       persistUser(nextUser);
@@ -119,7 +124,7 @@ export function AuthProvider({
   };
 
   useEffect(() => {
-    void loadSupabaseUser();
+    window.setTimeout(() => void loadSupabaseUser(), 0);
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -157,7 +162,7 @@ export function AuthProvider({
           profile?.full_name ||
           data.user.user_metadata?.full_name ||
           email.split("@")[0],
-        role: profile?.role === "admin" ? "admin" : "customer",
+        role: profile?.role === "admin" || data.user.app_metadata?.role === "admin" ? "admin" : "customer",
       };
 
       persistUser(nextUser);

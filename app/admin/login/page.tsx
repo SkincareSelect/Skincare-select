@@ -2,10 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { signIn, signOut } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,21 +20,35 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    const supabase = getSupabaseBrowserClient();
+    const result = await signIn(email, password);
 
-    if (!supabase) {
-      setError("Supabase is not configured correctly.");
+    if (!result.ok) {
+      setError(result.message || "Invalid email or password.");
       setLoading(false);
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Verify this account actually has admin privileges before letting it in.
+    // Regular customer accounts should never reach the admin dashboard, even
+    // with correct credentials.
+    try {
+      const response = await fetch("/api/auth/admin-status", { cache: "no-store" });
+      const data = response.ok ? await response.json() : null;
 
-    if (error) {
-      setError("Invalid email or password.");
+      if (!data || data.role !== "admin") {
+        await signOut();
+        const supabase = getSupabaseBrowserClient();
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
+        setError("This account does not have administrator access.");
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error("ADMIN STATUS CHECK ERROR:", err);
+      await signOut();
+      setError("Unable to verify administrator access. Please try again.");
       setLoading(false);
       return;
     }
@@ -78,7 +94,8 @@ export default function AdminLoginPage() {
               fontWeight: 700,
             }}
           >
-            L
+            <span style={{ fontStyle: "italic", transform: "translate(-5px, -3px)" }}>Z</span>
+            <span style={{ transform: "translate(5px, 3px)" }}>C</span>
           </div>
 
           <h1
@@ -88,7 +105,7 @@ export default function AdminLoginPage() {
               fontWeight: 700,
             }}
           >
-            Lueur & Co
+            Zhurie <em style={{ color: "#8d6e63", fontWeight: 400 }}>&amp; Co</em>
           </h1>
 
           <p
@@ -199,7 +216,7 @@ export default function AdminLoginPage() {
             color: "#888",
           }}
         >
-          Lueur & Co • Admin Management
+          Zhurie &amp; Co • Beauty curated by you
         </p>
       </div>
     </main>

@@ -56,9 +56,18 @@ create table if not exists public.orders (
     check (status in ('Pending payment','Paid','Address confirmed','Ready for dispatch','Dispatched','Delivered','Cancelled')),
   tracking_number text,
   courier_name text,
+  courier_assigned_at timestamptz,
+  picked_up_at timestamptz,
+  dispatched_at timestamptz,
+  delivered_at timestamptz,
   notes text,
   created_at timestamptz not null default now()
 );
+
+alter table public.orders add column if not exists courier_assigned_at timestamptz;
+alter table public.orders add column if not exists picked_up_at timestamptz;
+alter table public.orders add column if not exists dispatched_at timestamptz;
+alter table public.orders add column if not exists delivered_at timestamptz;
 
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
@@ -68,6 +77,26 @@ create table if not exists public.order_items (
   quantity integer not null check (quantity > 0),
   unit_price numeric(12,2) not null
 );
+
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  payment_method text not null,
+  reference text,
+  amount numeric(12,2),
+  provider_transaction_id text,
+  status text not null default 'pending' check (status in ('pending','processing','paid','failed','cancelled','awaiting_bank_verification','refunded')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.payments enable row level security;
+create policy "Admins view payments" on public.payments for select using (public.is_admin());
+create policy "Admins update payments" on public.payments for update using (public.is_admin());
+
+alter table public.payments add column if not exists provider_transaction_id text;
+alter table public.payments drop constraint if exists payments_status_check;
+alter table public.payments add constraint payments_status_check check (status in ('pending','processing','paid','failed','cancelled','awaiting_bank_verification','refunded'));
 
 create table if not exists public.reviews (
   id uuid primary key default gen_random_uuid(),
@@ -111,6 +140,8 @@ returns boolean language sql stable security definer set search_path=public as $
   select exists(select 1 from public.profiles where id=auth.uid() and role='admin');
 $$;
 
+create policy "Users can view own profile" on public.profiles for select using (id = auth.uid() or public.is_admin());
+
 create policy "Public can view active products" on public.products for select using (is_active or public.is_admin());
 create policy "Admins manage products" on public.products for all using (public.is_admin()) with check (public.is_admin());
 create policy "Public can view settings" on public.store_settings for select using (true);
@@ -133,7 +164,7 @@ create policy "Admins update product images" on storage.objects for update using
 create policy "Admins delete product images" on storage.objects for delete using (bucket_id='product-images' and public.is_admin());
 
 insert into public.store_settings (whatsapp,mtn_number,airtel_number,zamtel_number,bank_name,bank_account_name,bank_account_number,bank_branch)
-select '260000000000','096 XXX XXXX','097 XXX XXXX','095 XXX XXXX','YOUR BANK','SKINCARE SELECT','XXXXXXXXXX','YOUR BRANCH'
+select '260000000000','096 XXX XXXX','097 XXX XXXX','095 XXX XXXX','YOUR BANK','Zhurie & Co Zambia','XXXXXXXXXX','YOUR BRANCH'
 where not exists (select 1 from public.store_settings);
 
 -- After creating your first user in Supabase Authentication, make that user an admin:

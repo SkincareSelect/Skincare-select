@@ -2,39 +2,52 @@
 
 import Link from "next/link";
 import { useCart } from "@/app/components/cart-provider";
+import { getSettings } from "@/app/lib/store-data";
+import { ProductThumb } from "@/app/components/product-thumb";
+
+function formatPrice(value: number) {
+  return `K${value.toFixed(2)}`;
+}
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal } = useCart();
+  const settings = getSettings();
+  const deliveryFee = items.length > 0 ? settings.deliveryFee : 0;
+  const total = subtotal + deliveryFee;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Your basket</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Your bag</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">Cart summary</h1>
           </div>
-          <Link href="/shop" className="text-sm font-medium text-violet-600">Continue shopping</Link>
+          <Link href="/shop" className="text-sm font-medium text-[#8d6e63]">
+            Continue shopping
+          </Link>
         </div>
 
         <div className="mt-8 space-y-4">
           {items.length === 0 ? (
-            <div className="rounded-2xl bg-slate-50 p-6 text-slate-600">Your cart is empty. Add a few favourites to get started.</div>
+            <div className="rounded-[1.5rem] bg-[#fbf7f2] p-6 text-slate-600">Your cart is empty. Add a few favourites to get started.</div>
           ) : (
             items.map((item) => (
-              <div key={item.product.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={item.product.id} className="flex flex-col gap-4 rounded-[1.5rem] border border-[#eadfce] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-3xl">{item.product.image}</div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1rem] bg-[#fbf7f2] text-3xl">
+                    <ProductThumb product={item.product} className="h-full w-full" emojiClassName="text-3xl" />
+                  </div>
                   <div>
                     <p className="font-semibold text-slate-900">{item.product.name}</p>
-                    <p className="text-sm text-slate-500">K{item.product.price} each</p>
+                    <p className="text-sm text-slate-500">{formatPrice(item.product.price)} each</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <select
                     value={item.quantity}
                     onChange={(event) => updateQuantity(item.product.id, Number(event.target.value))}
-                    className="rounded-full border border-slate-200 px-3 py-2 text-sm"
+                    className="rounded-full border border-[#eadfce] bg-white px-3 py-2 text-sm"
                   >
                     {[1, 2, 3, 4, 5].map((count) => (
                       <option key={count} value={count}>
@@ -52,23 +65,23 @@ export default function CartPage() {
         </div>
       </section>
 
-      <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Order total</p>
+      <aside className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Order summary</p>
         <div className="mt-6 flex items-center justify-between text-slate-600">
           <span>Subtotal</span>
-          <span>K{subtotal}</span>
+          <span>{formatPrice(subtotal)}</span>
         </div>
         <div className="mt-2 flex items-center justify-between text-slate-600">
-          <span>Delivery</span>
-          <span>Free</span>
+          <span>Delivery fee</span>
+          <span>{formatPrice(deliveryFee)}</span>
         </div>
-        <div className="mt-6 border-t border-slate-200 pt-6 text-lg font-semibold text-slate-900">
+        <div className="mt-6 border-t border-[#eadfce] pt-6 text-lg font-semibold text-slate-900">
           <div className="flex items-center justify-between">
             <span>Total</span>
-            <span>K{subtotal}</span>
+            <span>{formatPrice(total)}</span>
           </div>
         </div>
-        <Link href="/checkout" className="mt-8 flex w-full justify-center rounded-full bg-violet-600 px-4 py-3 font-semibold text-white">
+        <Link href="/checkout" className="mt-8 flex w-full justify-center rounded-full bg-[#d9b8a7] px-4 py-3 font-semibold text-[#2f241f] transition hover:bg-[#c99d89]">
           Proceed to checkout
         </Link>
       </aside>

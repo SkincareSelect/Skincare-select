@@ -12,7 +12,7 @@ export default function ReferralsPage() {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (ref) {
-      setSelectedCode(ref.toUpperCase());
+      window.setTimeout(() => setSelectedCode(ref.toUpperCase()), 0);
     }
   }, []);
 
@@ -37,7 +37,7 @@ export default function ReferralsPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Refer a friend</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">Share the glow and earn rewards.</h1>
             <p className="mt-4 max-w-2xl text-slate-600">
-              Invite someone to try Lueur & Co and unlock savings for both of you when they use a valid referral code.
+              Invite someone to try Zhurie & Co and unlock savings for both of you when they use a valid referral code.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -121,7 +121,7 @@ export default function ReferralsPage() {
               <p className="text-sm font-semibold uppercase tracking-[0.25em] text-pink-500">Current offers</p>
               <h2 className="mt-3 text-2xl font-semibold text-slate-900">Your friends get savings.</h2>
               <ul className="mt-5 space-y-3 text-sm text-slate-600">
-                <li>• Share the Lueur & Co referral code</li>
+                <li>• Share the Zhurie & Co referral code</li>
                 <li>• Enjoy instant savings on qualifying orders</li>
                 <li>• Build reward momentum with each successful referral</li>
               </ul>
