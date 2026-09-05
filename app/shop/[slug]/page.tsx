@@ -7,6 +7,7 @@ import { initialProducts } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
+import { ProductReviews } from "@/app/components/product-reviews";
 
 function formatPrice(value: number) {
   return `K${value.toFixed(2)}`;
@@ -143,6 +144,8 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ slug:
           </div>
         </aside>
       </div>
+
+      <ProductReviews productId={product.id} />
 
       {relatedProducts.length > 0 ? (
         <section className="space-y-6">
