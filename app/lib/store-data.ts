@@ -44,7 +44,7 @@ export const categories: Array<{
   {
     label: "Fragrances",
     description: "Perfumes, body sprays and scent collections for all occasions, including our Arabic Perfumes collection.",
-    image: "https://images.unsplash.com/photo-1602532381225-eec578361933?auto=format&fit=crop&w=800&q=80",
+    image: "/images/fragrances-category.jpe",
   },
   {
     label: "Accessories",
