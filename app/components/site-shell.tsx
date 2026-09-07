@@ -175,7 +175,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 </p>
                 {[
                   { label: "Beauty consultant", number: store.whatsappNumber },
-                  { label: "Customer care", number: store.phoneNumber },
+                  { label: "Customer care", number: store.whatsappNumber },
                 ].map((consultant) => {
                   const number = consultant.number.replace(/[^0-9]/g, "");
                   const href = `https://wa.me/${number}?text=${encodeURIComponent("Hi Zhurie & Co, I would like skincare consultancy advice.")}`;
