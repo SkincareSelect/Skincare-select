@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { deleteProduct, saveProduct } from "./actions";
 import ProductImageUpload from "@/components/ProductImageUpload";
 import { requireAdmin } from "@/lib/supabase/require-admin";
@@ -10,11 +9,11 @@ type AdminProduct = {
   description: string | null;
   category: string;
   price: number;
-  compare_at_price: number | null;
+  originalPrice: number | null;
   stock: number;
   badge: string | null;
-  image_url: string | null;
-  is_active: boolean;
+  image: string | null;
+  hidden: boolean;
 };
 
 export default async function Products() {
@@ -23,7 +22,7 @@ export default async function Products() {
   const { data = [] } = await s
     .from("products")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("createdAt", { ascending: false });
 
   return (
     <>
@@ -73,7 +72,7 @@ export default async function Products() {
                 <td>{p.category}</td>
                 <td>K{Number(p.price).toFixed(2)}</td>
                 <td>{p.stock}</td>
-                <td>{p.is_active ? "Active" : "Hidden"}</td>
+                <td>{p.hidden ? "Hidden" : "Active"}</td>
 
                 <td>
                   <form action={deleteProduct}>
@@ -135,10 +134,11 @@ function ProductForm({ product }: { product?: AdminProduct }) {
             <option>Face Care</option>
             <option>Body Care</option>
             <option>Hair Care</option>
-            <option>Hair</option>
             <option>Men&apos;s Grooming</option>
-            <option>Women&apos;s Perfume</option>
-            <option>Men&apos;s Perfume</option>
+            <option>Makeup</option>
+            <option>Fragrances</option>
+            <option>Accessories</option>
+            <option>Baby Care</option>
           </select>
         </label>
 
@@ -157,11 +157,11 @@ function ProductForm({ product }: { product?: AdminProduct }) {
         <label>
           Old price
           <input
-            name="compare_at_price"
+            name="originalPrice"
             type="number"
             step=".01"
             min="0"
-            defaultValue={product?.compare_at_price ?? ""}
+            defaultValue={product?.originalPrice ?? ""}
           />
         </label>
 
@@ -186,7 +186,7 @@ function ProductForm({ product }: { product?: AdminProduct }) {
       </div>
 
       <ProductImageUpload
-        defaultValue={product?.image_url || ""}
+        defaultValue={product?.image || ""}
       />
 
       <label
@@ -199,8 +199,8 @@ function ProductForm({ product }: { product?: AdminProduct }) {
         <input
           style={{ width: "auto" }}
           type="checkbox"
-          name="is_active"
-          defaultChecked={product?.is_active ?? true}
+          name="hidden"
+          defaultChecked={!product?.hidden}
         />
 
         Visible in store
