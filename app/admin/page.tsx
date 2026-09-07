@@ -457,6 +457,7 @@ export default function AdminPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Admin dashboard</p>
+            <p className="mt-3 text-lg font-medium text-slate-700">Welcome, Mr Kondowe</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">Manage products, orders, and payments</h1>
           </div>
           <Link href="/" className="text-sm font-medium text-violet-600">View storefront</Link>
