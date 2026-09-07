@@ -24,7 +24,7 @@ export const categories: Array<{
   {
     label: "Body Care",
     description: "Body wash, lotion, scrubs and nourishing self-care staples.",
-    image: "https://images.unsplash.com/photo-1607187517174-1aa8ff91d93c?auto=format&fit=crop&w=800&q=80",
+    image: "/images/body-care-category.png",
   },
   {
     label: "Hair Care",
