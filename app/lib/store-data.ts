@@ -34,7 +34,7 @@ export const categories: Array<{
   {
     label: "Men's Grooming",
     description: "Beard care, shaving, grooming and everyday essentials.",
-    image: "https://images.unsplash.com/photo-1531901599143-df5010ab9438?auto=format&fit=crop&w=800&q=80",
+    image: "/images/mens-grooming-category.jpe",
   },
   {
     label: "Makeup",
