@@ -49,7 +49,7 @@ export default function CartPage() {
                     onChange={(event) => updateQuantity(item.product.id, Number(event.target.value))}
                     className="rounded-full border border-[#eadfce] bg-white px-3 py-2 text-sm"
                   >
-                    {[1, 2, 3, 4, 5].map((count) => (
+                    {Array.from({ length: Math.min(5, item.product.stock) }, (_, index) => index + 1).map((count) => (
                       <option key={count} value={count}>
                         {count}
                       </option>

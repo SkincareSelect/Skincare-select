@@ -88,7 +88,10 @@ export async function POST(request: Request) {
     }
 
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const deliveryFee = Number(body.delivery_fee || 0);
+    const deliveryFee = Number(body.delivery_fee ?? 0);
+    if (!Number.isFinite(deliveryFee) || deliveryFee < 0) {
+      return NextResponse.json({ error: "Invalid delivery fee." }, { status: 400 });
+    }
     const discounts: Record<string, number> = { SELECT10: 0.1, SELECT15: 0.15, GLOWUP: 0.05 };
     const discountRate = body.referral_code ? discounts[body.referral_code.toUpperCase()] || 0 : 0;
     const discount = subtotal * discountRate;

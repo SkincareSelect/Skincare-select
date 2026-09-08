@@ -114,7 +114,7 @@ export default function AccountPage() {
               )}
             </div>
           </div>
-          {user.role === "admin" ? (
+          {user.role === "admin" || user.role === "orders_admin" ? (
             <Link href="/admin" className="mt-6 flex w-full justify-center rounded-full bg-violet-600 px-4 py-3 font-semibold text-white">
               Open admin dashboard
             </Link>

@@ -32,7 +32,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsed = JSON.parse(stored) as CartItem[];
       if (Array.isArray(parsed)) {
-        window.setTimeout(() => setItems(parsed), 0);
+        const validItems = parsed.filter(
+          (item) =>
+            item &&
+            item.product &&
+            typeof item.product.id === "string" &&
+            Number.isInteger(item.quantity) &&
+            item.quantity > 0 &&
+            item.product.stock > 0,
+        ).map((item) => ({
+          ...item,
+          quantity: Math.min(item.quantity, item.product.stock),
+        }));
+        window.setTimeout(() => setItems(validItems), 0);
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -55,10 +67,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((currentItems) => {
       const existing = currentItems.find((item) => item.product.id === product.id);
       if (existing) {
-        return currentItems.map((item) => (item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+        return currentItems.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) }
+            : item,
+        );
       }
 
-      return [...currentItems, { product, quantity: 1 }];
+      return product.stock > 0 ? [...currentItems, { product, quantity: 1 }] : currentItems;
     });
   }, []);
 
@@ -72,7 +88,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setItems((currentItems) => currentItems.map((item) => (item.product.id === productId ? { ...item, quantity } : item)));
+    setItems((currentItems) => currentItems.map((item) => (
+     item.product.id === productId
+       ? { ...item, quantity: Math.min(quantity, item.product.stock) }
+       : item
+    )));
   }, [removeItem]);
 
   const clearCart = useCallback(() => {
