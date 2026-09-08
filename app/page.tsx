@@ -7,6 +7,7 @@ import { ProductSection } from "@/app/components/product-section";
 import { ProductCarousel } from "@/app/components/product-carousel";
 import { ProductThumb } from "@/app/components/product-thumb";
 import { FeaturedCampaign } from "@/app/components/featured-campaign";
+import { SectionLink } from "@/app/components/section-link";
 
 export default async function HomePage() {
   const products = await fetchProductsFromSupabase();
@@ -32,9 +33,9 @@ export default async function HomePage() {
               <Link href="/shop" className="rounded-full border border-[#eadfce] bg-[#fbf7f2] px-6 py-3 text-sm font-semibold text-[#2f241f] shadow-sm transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]">
                 SHOP NOW
               </Link>
-              <Link href="/#categories" className="rounded-full border border-[#eadfce] bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#d8c1b1] hover:text-[#2f241f]">
+              <SectionLink href="/#categories" className="rounded-full border border-[#eadfce] bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#d8c1b1] hover:text-[#2f241f]">
                 EXPLORE COLLECTION
-              </Link>
+              </SectionLink>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {[

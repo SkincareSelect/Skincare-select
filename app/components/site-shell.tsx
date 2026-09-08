@@ -32,6 +32,31 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const scrollToHash = () => {
+      if (!window.location.hash) {
+        return;
+      }
+
+      const targetId = window.location.hash.slice(1);
+      const target = document.getElementById(targetId);
+      if (!target) {
+        return;
+      }
+
+      window.setTimeout(() => {
+        window.scrollTo({
+          top: Math.max(target.getBoundingClientRect().top + window.scrollY - 112, 0),
+          behavior: "smooth",
+        });
+      }, 100);
+    };
+
+    scrollToHash();
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
+  }, [pathname]);
+
+  useEffect(() => {
     if (!consultancyOpen) {
       return;
     }
@@ -45,6 +70,27 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [consultancyOpen]);
+
+  const handleNavigation = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!href.startsWith("/#")) {
+      setMenuOpen(false);
+      return;
+    }
+
+    const target = document.getElementById(href.slice(2));
+    if (!target) {
+      setMenuOpen(false);
+      return;
+    }
+
+    event.preventDefault();
+    window.history.pushState({}, "", href);
+    window.scrollTo({
+      top: Math.max(target.getBoundingClientRect().top + window.scrollY - 112, 0),
+      behavior: "smooth",
+    });
+    setMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fffdfb_0%,#fbf7f2_45%,#f7f1ea_100%)] text-slate-900">
@@ -66,6 +112,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={(event) => handleNavigation(event, link.href)}
                 className={`text-sm font-medium transition ${
                   pathname === link.href ? "text-[#8d6e63]" : "text-slate-600 hover:text-[#8d6e63]"
                 }`}
@@ -121,7 +168,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={(event) => handleNavigation(event, link.href)}
                   className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]"
                 >
                   {link.label}
