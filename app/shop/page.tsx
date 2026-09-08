@@ -132,7 +132,7 @@ export default function ShopPage() {
         </div>
       </section>
 
-      <section className="flex flex-wrap gap-3" id="categories">
+      <section className="scroll-mt-28 flex flex-wrap gap-3" id="categories">
         <button
           onClick={() => setCategory("All")}
           className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
@@ -226,7 +226,7 @@ export default function ShopPage() {
         </section>
       ) : null}
 
-      <div id="products" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div id="products" className="scroll-mt-28 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <article

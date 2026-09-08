@@ -56,7 +56,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="space-y-6" id="categories">
+      <section className="scroll-mt-28 space-y-6" id="categories">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Shop by category</p>
           <h2 className="mt-2 text-3xl font-semibold text-slate-900">Browse the full beauty collection</h2>
@@ -101,7 +101,7 @@ export default async function HomePage() {
         />
       </section>
 
-      <section id="new-arrivals" className="space-y-6">
+      <section id="new-arrivals" className="scroll-mt-28 space-y-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">New arrivals</p>
           <h2 className="mt-2 text-3xl font-semibold text-slate-900">Recently added products</h2>
@@ -126,7 +126,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="best-sellers" className="space-y-6">
+      <section id="best-sellers" className="scroll-mt-28 space-y-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Best sellers</p>
           <h2 className="mt-2 text-3xl font-semibold text-slate-900">Most loved products</h2>
