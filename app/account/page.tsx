@@ -70,6 +70,7 @@ export default function AccountPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Welcome back</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900">{user.name}</h1>
           <p className="mt-2 text-slate-600">{user.email}</p>
+          {message ? <p className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{message}</p> : null}
           <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
             <p className="font-semibold text-slate-900">Role</p>
             <p className="mt-1 capitalize">{user.role}</p>

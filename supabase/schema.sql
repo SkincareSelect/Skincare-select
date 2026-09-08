@@ -3,7 +3,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
-  role text not null default 'customer' check (role in ('customer','admin')),
+  role text not null default 'customer' check (role in ('customer','admin','orders_admin')),
   created_at timestamptz not null default now()
 );
 
@@ -91,8 +91,19 @@ create table if not exists public.payments (
 );
 
 alter table public.payments enable row level security;
-create policy "Admins view payments" on public.payments for select using (public.is_admin());
-create policy "Admins update payments" on public.payments for update using (public.is_admin());
+create policy "Admins view payments" on public.payments for select using (
+  public.is_admin()
+  or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+);
+create policy "Admins update payments" on public.payments for update
+  using (
+    public.is_admin()
+    or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+  )
+  with check (
+    public.is_admin()
+    or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+  );
 
 alter table public.payments add column if not exists provider_transaction_id text;
 alter table public.payments drop constraint if exists payments_status_check;
@@ -146,9 +157,25 @@ create policy "Public can view active products" on public.products for select us
 create policy "Admins manage products" on public.products for all using (public.is_admin()) with check (public.is_admin());
 create policy "Public can view settings" on public.store_settings for select using (true);
 create policy "Admins manage settings" on public.store_settings for all using (public.is_admin()) with check (public.is_admin());
-create policy "Admins view orders" on public.orders for select using (public.is_admin() or user_id=auth.uid());
-create policy "Admins update orders" on public.orders for update using (public.is_admin());
-create policy "Admins view order items" on public.order_items for select using (public.is_admin() or exists(select 1 from public.orders o where o.id=order_id and o.user_id=auth.uid()));
+create policy "Admins view orders" on public.orders for select using (
+  public.is_admin()
+  or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+  or user_id=auth.uid()
+);
+create policy "Admins update orders" on public.orders for update
+  using (
+    public.is_admin()
+    or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+  )
+  with check (
+    public.is_admin()
+    or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+  );
+create policy "Admins view order items" on public.order_items for select using (
+  public.is_admin()
+  or exists(select 1 from public.profiles where id = auth.uid() and role = 'orders_admin')
+  or exists(select 1 from public.orders o where o.id=order_id and o.user_id=auth.uid())
+);
 create policy "Approved reviews are public" on public.reviews for select using (is_approved or user_id=auth.uid() or public.is_admin());
 create policy "Users create own reviews" on public.reviews for insert with check (user_id=auth.uid());
 create policy "Users manage own wishlist" on public.wishlists for all using (user_id=auth.uid()) with check (user_id=auth.uid());

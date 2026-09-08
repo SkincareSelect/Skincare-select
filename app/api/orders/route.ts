@@ -28,7 +28,7 @@ type OrderRequest = {
   items?: OrderRequestItem[];
 };
 
-const paymentMethods = ["MTN Mobile Money", "Airtel Money", "Zamtel Money", "Bank Transfer"] as const;
+const paymentMethods = ["Airtel Money", "Zamtel Money"] as const;
 
 export async function POST(request: Request) {
   try {
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "One or more items are no longer available." }, { status: 400 });
     }
 
-    const items: { product_id: string; product_name: string; quantity: number; unit_price: number }[] = [];
+    const items: { product_id: string; product_name: string; quantity: number; price: number }[] = [];
     for (const requested of requestedItems) {
       const product = productMap.get(requested.product_id)!;
       if (product.hidden) {
@@ -83,11 +83,11 @@ export async function POST(request: Request) {
         product_id: product.id,
         product_name: product.name,
         quantity: requested.quantity,
-        unit_price: Number(product.price),
+        price: Number(product.price),
       });
     }
 
-    const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const deliveryFee = Number(body.delivery_fee || 0);
     const discounts: Record<string, number> = { SELECT10: 0.1, SELECT15: 0.15, GLOWUP: 0.05 };
     const discountRate = body.referral_code ? discounts[body.referral_code.toUpperCase()] || 0 : 0;
@@ -98,8 +98,8 @@ export async function POST(request: Request) {
       order_number: orderNumber, customer_name: body.customer_name, phone,
       email: body.customer_email || null, province: body.province || "", city: body.city || "", address: body.address,
       landmark: body.landmark || null, delivery_method: body.delivery_method,
-      delivery_fee: deliveryFee, payment_method: body.payment_method || "Bank Transfer", subtotal,
-      total: Math.max(0, subtotal + deliveryFee - discount), status: "Pending payment", notes: body.notes || null
+      delivery_fee: deliveryFee, payment_method: body.payment_method || "Airtel Money", subtotal,
+      total: Math.max(0, subtotal + deliveryFee - discount), status: "Pending payment"
     }).select("id,order_number").single();
     if (error) throw error;
 
@@ -122,15 +122,25 @@ export async function POST(request: Request) {
 
     const { error: paymentError } = await supabase.from("payments").insert({
       order_id: order.id,
-      payment_method: body.payment_method || "Bank Transfer",
+      payment_method: body.payment_method || "Airtel Money",
       reference: paymentReference,
       amount: Math.max(0, subtotal + deliveryFee - discount),
-      status: body.payment_method === "Bank Transfer" ? "pending" : "pending",
+      status: "pending",
     });
-    if (paymentError) throw paymentError;
+    if (paymentError && paymentError.code !== "PGRST205") {
+      throw paymentError;
+    }
 
-    const { data: payment } = await supabase.from("payments").select("id").eq("order_id", order.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-    return NextResponse.json({ order_id: order.id, order_number: order.order_number, payment_id: payment?.id, payment_reference: paymentReference });
+    const paymentId = paymentError ? undefined : (
+      await supabase
+        .from("payments")
+        .select("id")
+        .eq("order_id", order.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    ).data?.id;
+    return NextResponse.json({ order_id: order.id, order_number: order.order_number, payment_id: paymentId, payment_reference: paymentReference });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "The order could not be saved. Check the server configuration." }, { status: 500 });

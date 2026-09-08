@@ -135,7 +135,7 @@ function ProductForm({ product }: { product?: AdminProduct }) {
             <option>Body Care</option>
             <option>Hair Care</option>
             <option>Men&apos;s Grooming</option>
-            <option>Makeup</option>
+            <option>Apparel and footwear</option>
             <option>Fragrances</option>
             <option>Accessories</option>
             <option>Baby Care</option>

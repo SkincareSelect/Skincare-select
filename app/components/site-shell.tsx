@@ -121,18 +121,19 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={() => setMenuOpen(false)}
                   className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]"
                 >
                   {link.label}
                 </Link>
               ))}
-              <Link href="/shop" className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
+              <Link href="/shop" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
                 Search
               </Link>
-              <Link href="/account" className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
+              <Link href="/account" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
                 {user ? "Account" : "Login"}
               </Link>
-              <Link href="/wishlist" className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
+              <Link href="/wishlist" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
                 Wishlist
               </Link>
             </div>
@@ -142,7 +143,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
 
-      <div className="sticky bottom-0 z-40 mx-auto w-full max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
         <div className="rounded-[2rem] border border-[#eadfce] bg-white/95 px-5 py-4 shadow-lg backdrop-blur sm:px-6 sm:py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -175,7 +176,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 </p>
                 {[
                   { label: "Beauty consultant", number: store.whatsappNumber },
-                  { label: "Customer care", number: store.whatsappNumber },
+                  { label: "Customer care", number: store.phoneNumber },
                 ].map((consultant) => {
                   const number = consultant.number.replace(/[^0-9]/g, "");
                   const href = `https://wa.me/${number}?text=${encodeURIComponent("Hi Zhurie & Co, I would like skincare consultancy advice.")}`;

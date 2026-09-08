@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ProductImageUpload({defaultValue=""}:{defaultValue?:string}){
@@ -11,5 +12,5 @@ export default function ProductImageUpload({defaultValue=""}:{defaultValue?:stri
   if(error){alert(error.message);setLoading(false);return}
   const {data}=s.storage.from("product-images").getPublicUrl(path);setUrl(data.publicUrl);setLoading(false)
  }
- return <label>Product photograph<input type="file" accept="image/*" onChange={upload}/>{loading&&<small>Uploading...</small>}{url&&<img src={url} alt="Preview" style={{width:150,height:150,objectFit:"cover"}}/>}<input type="hidden" name="image" value={url}/></label>
+ return <label>Product photograph<input type="file" accept="image/*" onChange={upload}/>{loading&&<small>Uploading...</small>}{url&&<Image src={url} alt="Preview" width={150} height={150} unoptimized style={{width:150,height:150,objectFit:"cover"}}/>}<input type="hidden" name="image" value={url}/></label>
 }

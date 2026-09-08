@@ -24,6 +24,10 @@ export async function GET() {
 
   return NextResponse.json({
     full_name: profile?.full_name ?? null,
-    role: profile?.role === "admin" || user.app_metadata?.role === "admin" ? "admin" : "customer",
+    role: profile?.role === "orders_admin"
+      ? "orders_admin"
+      : profile?.role === "admin" || user.app_metadata?.role === "admin"
+        ? "admin"
+        : "customer",
   });
 }

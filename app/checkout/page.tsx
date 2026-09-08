@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Landmark, RadioTower, Smartphone } from "lucide-react";
+import { Building2, RadioTower } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { useAuth } from "@/app/components/auth-provider";
 import {
@@ -17,14 +17,12 @@ import {
 import { upsertOrderToSupabase, upsertPaymentToSupabase } from "@/app/lib/supabase/data-client";
 import type { Order, Payment, PaymentMethod } from "@/app/lib/types";
 
-const paymentMethods: PaymentMethod[] = ["Airtel Money", "MTN Mobile Money", "Zamtel Money", "Bank Transfer"];
+type AvailablePaymentMethod = "Airtel Money" | "Zamtel Money";
+const paymentMethods: AvailablePaymentMethod[] = ["Airtel Money", "Zamtel Money"];
 
-const paymentMethodBadges: Record<PaymentMethod, { icon: React.ComponentType<{ size?: number; className?: string }>; tint: string; label: string }> = {
+const paymentMethodBadges: Record<"Airtel Money" | "Zamtel Money", { icon: React.ComponentType<{ size?: number; className?: string }>; tint: string; label: string }> = {
   "Airtel Money": { icon: RadioTower, tint: "bg-red-100 text-red-700", label: "Airtel" },
-  "MTN Mobile Money": { icon: Smartphone, tint: "bg-yellow-100 text-yellow-800", label: "MTN" },
   "Zamtel Money": { icon: Building2, tint: "bg-green-100 text-green-700", label: "Zamtel" },
-  "Bank Transfer": { icon: Landmark, tint: "bg-blue-100 text-blue-700", label: "Bank" },
-  "Cash on Delivery": { icon: Landmark, tint: "bg-slate-100 text-slate-700", label: "Cash" },
 };
 
 function formatPrice(value: number) {
@@ -60,7 +58,7 @@ export default function CheckoutPage() {
   const [area, setArea] = useState("");
   const [notes, setNotes] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("MTN Mobile Money");
+  const [paymentMethod, setPaymentMethod] = useState<AvailablePaymentMethod>("Airtel Money");
   const [status, setStatus] = useState("Ready to place order");
   const [loading, setLoading] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<{ number: string; total: number } | null>(null);
@@ -151,13 +149,11 @@ export default function CheckoutPage() {
       const paymentResponse = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paymentMethod === "Bank Transfer"
-          ? { action: "bank_confirm", payment_id: result.payment_id, reference: result.payment_reference }
-          : { action: "initiate", order_id: result.order_id, payment_method: paymentMethod, phone, reference: result.payment_reference }),
+        body: JSON.stringify({ action: "initiate", order_id: result.order_id, payment_method: paymentMethod, phone, reference: result.payment_reference }),
       });
       const paymentResult = await paymentResponse.json() as { status?: Payment["status"]; message?: string; paymentUrl?: string };
       paymentStatus = paymentResult.status ?? "pending";
-      paymentMessage = paymentResult.message ?? (paymentMethod === "Bank Transfer" ? "Payment awaiting bank verification." : "Payment pending provider confirmation.");
+      paymentMessage = paymentResult.message ?? "Payment pending provider confirmation.";
       paymentUrl = paymentResult.paymentUrl;
     }
     const payment: Payment = {
@@ -195,8 +191,7 @@ export default function CheckoutPage() {
       setConfirmedOrder({ number: result.order_number ?? orderNumber, total });
       return;
     }
-    setStatus(`${paymentMessage} Order ${orderNumber}.`);
-    router.push("/account");
+    setStatus(`Order submitted successfully. ${paymentMessage} Order ${orderNumber}.`);
   };
 
   if (confirmedOrder) {
@@ -287,15 +282,6 @@ export default function CheckoutPage() {
              <p className="text-sm font-medium text-slate-500">Amount to pay</p>
              <p className="mt-1 text-2xl font-semibold text-slate-900">{formatPrice(total)}</p>
           </div>
-          {paymentMethod === "Bank Transfer" ? (
-             <div className="mt-4 rounded-2xl bg-[#fbf7f2] px-4 py-4 text-sm text-slate-600">
-               <p><strong>Bank:</strong> {settings.bankName}</p>
-               <p><strong>Account name:</strong> {settings.bankAccountName}</p>
-               <p><strong>Account number:</strong> {settings.bankAccountNumber}</p>
-               <p><strong>Branch:</strong> {settings.bankBranch}</p>
-               <p><strong>Reference:</strong> Generated automatically after order placement</p>
-             </div>
-          ) : null}
         </div>
 
         <div className="mt-4">
@@ -306,7 +292,7 @@ export default function CheckoutPage() {
         <button type="submit" disabled={loading} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
           {loading ? "Placing order..." : "Place order"}
         </button>
-        <p className="mt-4 text-sm text-slate-500">{status}</p>
+        <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${status.startsWith("Order submitted successfully") ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`} role="status">{status}</p>
       </form>
 
       <aside className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">
@@ -328,6 +314,9 @@ export default function CheckoutPage() {
             <span>Delivery fee</span>
             <span>{formatPrice(deliveryFee)}</span>
           </div>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            Lusaka and countrywide deliveries are available. Fees vary by destination and are confirmed with your delivery details.
+          </p>
           {referralReward ? (
             <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
               <span>Referral discount ({referralReward.discountPercent}%)</span>

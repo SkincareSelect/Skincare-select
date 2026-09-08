@@ -40,3 +40,23 @@ export async function uploadProductImage(file: File) {
 
   return data.publicUrl;
 }
+
+export async function uploadCampaignImage(file: File) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const fileName = `campaign-${Date.now()}.${extension}`;
+  const { error } = await supabase.storage.from("product-images").upload(fileName, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+
+  if (error) {
+    return null;
+  }
+
+  return supabase.storage.from("product-images").getPublicUrl(fileName).data.publicUrl;
+}

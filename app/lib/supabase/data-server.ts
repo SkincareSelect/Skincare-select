@@ -67,6 +67,35 @@ export async function fetchSettingsFromSupabase() {
   return data as StoreSettings;
 }
 
+export async function fetchCampaignFromSupabase() {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select("campaign_eyebrow, campaign_type, campaign_active, campaign_title, campaign_description, campaign_visual, campaign_image_url, campaign_footer, campaign_offer")
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    campaignEyebrow: data.campaign_eyebrow,
+    campaignType: data.campaign_type,
+    campaignActive: data.campaign_active,
+    campaignTitle: data.campaign_title,
+    campaignDescription: data.campaign_description,
+    campaignVisual: data.campaign_visual,
+    campaignImageUrl: data.campaign_image_url,
+    campaignFooter: data.campaign_footer,
+    campaignOffer: data.campaign_offer,
+  };
+}
+
 export async function upsertProductToSupabase(product: Product) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {

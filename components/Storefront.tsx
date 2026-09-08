@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { ShoppingBag, Search, X } from "lucide-react";
 import type { CartItem, Product, StoreSettings } from "@/lib/types";
 
@@ -64,7 +65,7 @@ export default function Storefront({ initialProducts, settings }:{
   }
 
   return <>
-    <div className="announcement">Delivery across Zambia • Parcels are dispatched only after payment and address confirmation</div>
+    <div className="announcement">Lusaka and countrywide deliveries available for a fee • Charges vary by destination</div>
     <header className="header">
       <div className="container" style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <a className="brand" href="#"><span className="brandmark" style={{fontFamily:"Georgia,serif",fontStyle:"italic"}}>Z<span style={{fontStyle:"normal",marginLeft:-2}}>C</span></span><span><b>Zhurie</b> &amp; Co</span></a>
@@ -114,7 +115,7 @@ export default function Storefront({ initialProducts, settings }:{
           {shown.map(p=><article className="product-card" key={p.id}>
             <div className="product-image">
               {p.badge&&<span className="badge">{p.badge}</span>}
-              {p.image_url?<img src={p.image_url} alt={p.name}/>:<div className="placeholder-product">SELECT</div>}
+              {p.image_url?<Image src={p.image_url} alt={p.name} width={500} height={500} unoptimized/>:<div className="placeholder-product">SELECT</div>}
             </div>
             <div className="product-body">
               <span className="category">{p.category}</span><h3>{p.name}</h3><p>{p.description}</p>
@@ -127,7 +128,7 @@ export default function Storefront({ initialProducts, settings }:{
 
       <section className="section container" id="shipping">
         <div className="shipping">
-          <div><p className="eyebrow" style={{color:"#c4dbcf"}}>ZAMBIA SHIPPING</p><h2 className="section-title">Payment first.<br/>Address confirmed.<br/>Then we dispatch.</h2><p>Every parcel is prepared only after full payment is verified and the customer&apos;s phone number, town, province, address and nearest landmark have been confirmed.</p></div>
+          <div><p className="eyebrow" style={{color:"#c4dbcf"}}>ZAMBIA SHIPPING</p><h2 className="section-title">Payment first.<br/>Address confirmed.<br/>Then we dispatch.</h2><p>Lusaka and countrywide deliveries are available for a fee. Charges vary by destination and are confirmed with your delivery details. Every parcel is prepared only after full payment is verified and the customer&apos;s phone number, town, province, address and nearest landmark have been confirmed.</p></div>
           <div className="steps">
             <div className="step"><span>1</span><div><b>Order submitted</b><br/><small>Customer chooses products and delivery method.</small></div></div>
             <div className="step"><span>2</span><div><b>Payment confirmed</b><br/><small>Mobile Money or bank payment is verified.</small></div></div>
@@ -145,7 +146,7 @@ export default function Storefront({ initialProducts, settings }:{
     <footer className="footer"><div className="container footer-grid">
       <div><div className="brand"><span className="brandmark" style={{fontFamily:"Georgia,serif",fontStyle:"italic"}}>Z<span style={{fontStyle:"normal",marginLeft:-2}}>C</span></span><span>Zhurie &amp; Co</span></div><p>Beauty and grooming essentials for everyone.</p></div>
       <div><b>Customer care</b><p>WhatsApp: {store.whatsapp}</p></div>
-      <div><b>Payments</b><p>MTN MoMo<br/>Airtel Money<br/>Zamtel Kwacha<br/>Bank transfer</p></div>
+      <div><b>Payments</b><p>Airtel Money<br/>Zamtel Kwacha</p></div>
     </div></footer>
 
     {cartOpen&&<><div className="cart-backdrop" onClick={()=>setCartOpen(false)}/><aside className="cart">
@@ -164,7 +165,7 @@ export default function Storefront({ initialProducts, settings }:{
 
 function Checkout({cart,subtotal,store,close,completed}:{cart:CartItem[];subtotal:number;store:StoreSettings;close:()=>void;completed:()=>void}) {
   const [delivery,setDelivery]=useState("Lusaka delivery");
-  const [payment,setPayment]=useState("MTN MoMo");
+  const [payment,setPayment]=useState("Airtel Money");
   const [loading,setLoading]=useState(false);
   const fee=delivery==="Pickup"?0:delivery==="Lusaka delivery"?50:100;
   const total=subtotal+fee;
@@ -210,7 +211,7 @@ function Checkout({cart,subtotal,store,close,completed}:{cart:CartItem[];subtota
           <label className="wide">Nearest landmark<input name="landmark" required/></label>
         </div>
         <h3>Delivery method</h3><div className="options">{["Lusaka delivery","Nationwide courier","Pickup"].map(x=><label className="option" key={x}><input name="delivery_method" type="radio" checked={delivery===x} onChange={()=>setDelivery(x)}/><span>{x}<br/><small>{x==="Pickup"?"Free":x==="Lusaka delivery"?"K50":"K100"}</small></span></label>)}</div>
-        <h3>Payment method</h3><div className="options">{["MTN MoMo","Airtel Money","Zamtel Kwacha","Bank transfer"].map(x=><label className="option" key={x}><input name="payment_method" type="radio" checked={payment===x} onChange={()=>setPayment(x)}/><span>{x}</span></label>)}</div>
+        <h3>Payment method</h3><div className="options">{["Airtel Money","Zamtel Kwacha"].map(x=><label className="option" key={x}><input name="payment_method" type="radio" checked={payment===x} onChange={()=>setPayment(x)}/><span>{x}</span></label>)}</div>
         <label style={{display:"grid",gap:7,marginTop:18}}>Notes<textarea name="notes" rows={3}/></label>
       </div>
       <aside className="order-box"><h3>Order summary</h3>{cart.map(i=><div className="line" key={i.id}><span>{i.name} × {i.quantity}</span><b>K{(i.price*i.quantity).toFixed(2)}</b></div>)}<hr/><div className="line"><span>Subtotal</span><span>K{subtotal.toFixed(2)}</span></div><div className="line"><span>Delivery</span><span>K{fee.toFixed(2)}</span></div><div className="line"><strong>Total</strong><strong>K{total.toFixed(2)}</strong></div><p style={{fontSize:12,color:"var(--muted)",lineHeight:1.6}}>Your parcel is sent only after payment and address confirmation.</p><button className="btn btn-primary" style={{width:"100%"}} disabled={loading}>{loading?"Placing order...":"Place order"}</button></aside>

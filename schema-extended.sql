@@ -237,6 +237,15 @@ create table if not exists public.store_settings (
   support_phone text not null default '+260977000000',
   delivery_fee numeric(10,2) not null default 20,
   business_hours text not null default 'Mon-Sat 8:00 AM - 8:00 PM',
+  campaign_eyebrow text not null default 'Featured campaign',
+  campaign_type text not null default 'Promotion',
+  campaign_active boolean not null default true,
+  campaign_title text not null default 'Soft glow essentials',
+  campaign_description text not null default 'Cleanser, serum and body care picks designed to keep your routine simple, elegant and effective.',
+  campaign_visual text not null default '✨',
+  campaign_image_url text not null default '',
+  campaign_footer text not null default 'New customer savings available',
+  campaign_offer text not null default 'From K185',
   social_links jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -512,7 +521,7 @@ insert into public.categories (name, slug, description) values
   ('Body Care','body-care','Hydrating and renewing body formulas'),
   ('Hair Care','hair-care','Strengthening and nourishing products'),
   ('Men''s Grooming','mens-grooming','Confident grooming essentials'),
-  ('Makeup','makeup','Color cosmetics and beauty finishing products'),
+  ('Apparel and footwear','footwear-and-clothes','Everyday apparel and footwear essentials'),
   ('Fragrances','fragrances','Signature scents and perfumes'),
   ('Accessories','accessories','Beauty tools and accessories')
 on conflict (slug) do nothing;
@@ -537,8 +546,8 @@ insert into public.store_settings (
 ) values (
   'Zhurie & Co',
   '',
-  '+260977000000',
-  '{"MTN Mobile Money":"+260770000001","Airtel Money":"+260960000001","Zamtel Money":"+260950000001","Bank Transfer":"0101234567","Cash on Delivery":""}',
+  '+260973970079',
+  '{"MTN Mobile Money":"+260770000001","Airtel Money":"+260973970079","Zamtel Money":"+260950000001","Bank Transfer":"0101234567","Cash on Delivery":""}',
   '{"accountName":"Zhurie & Co Zambia","accountNumber":"0101234567","bankName":"Zanaco","branch":"Lusaka","swiftCode":"ZANAZMLU"}',
   'hello@lueurco.co.zm',
   '+260977000000',

@@ -30,6 +30,19 @@ const arabicPerfumeFilters = [
 
 const genderFilters: string[] = ["Men", "Women", "Unisex"];
 
+function normalizeCategory(value: string | null): ProductCategory | "All" {
+  if (!value) {
+    return "All";
+  }
+
+  const match = categories.find((item) => item.label.toLowerCase() === value.trim().toLowerCase());
+  if (match) {
+    return match.label;
+  }
+
+  return value.trim().toLowerCase() === "fragrance" ? "Fragrances" : "All";
+}
+
 const koreanSkinConcernFilters = [
   "Dark Spots",
   "Acne & Blemishes",
@@ -50,7 +63,12 @@ const koreanSkinTypeFilters = ["All Skin Types", "Oily", "Dry", "Combination", "
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [category, setCategory] = useState<ProductCategory | "All">("All");
+  const [category, setCategory] = useState<ProductCategory | "All">(() => {
+    if (typeof window === "undefined") {
+      return "All";
+    }
+    return normalizeCategory(new URLSearchParams(window.location.search).get("category"));
+  });
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const { addItem } = useCart();
@@ -69,7 +87,7 @@ export default function ShopPage() {
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      const matchesCategory = category === "All" || product.category === category;
+      const matchesCategory = category === "All" || normalizeCategory(product.category) === category;
       const searchText = `${product.name} ${product.brand ?? ""} ${product.description} ${product.productType ?? ""}`.toLowerCase();
       const matchesQuery = searchText.includes(query.toLowerCase());
       const matchesFilters =
@@ -91,7 +109,7 @@ export default function ShopPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Shop</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">Complete product catalogue</h1>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">Shop</h1>
             <p className="mt-3 max-w-2xl text-slate-600">
               Search by name, brand, category or product type to find the right skincare, beauty or grooming essential.
             </p>
@@ -208,7 +226,7 @@ export default function ShopPage() {
         </section>
       ) : null}
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div id="products" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <article

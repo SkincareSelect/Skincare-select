@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/components/auth-provider";
 import { getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
-import { uploadProductImage } from "@/app/lib/supabase/client";
+import { uploadCampaignImage, uploadProductImage } from "@/app/lib/supabase/client";
 import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
 import type { Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
 
@@ -64,6 +64,14 @@ const orderStatusCounts = (list: Order[]) => {
   return counts;
 };
 
+type Customer = {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  lastSignInAt: string | null;
+};
+
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -74,16 +82,45 @@ export default function AdminPage() {
   const [draftProduct, setDraftProduct] = useState<Partial<Product>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingCampaignImage, setUploadingCampaignImage] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [orderFilter, setOrderFilter] = useState<"All" | OrderStatus>("All");
   const [orderSearch, setOrderSearch] = useState("");
   const [orderRange, setOrderRange] = useState<"All" | "Today" | "7 days" | "30 days">("All");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/admin/login");
     }
   }, [loading, router, user]);
+
+  useEffect(() => {
+    if (loading || !user) {
+      return;
+    }
+
+    const loadCustomers = async () => {
+      try {
+        const response = await fetch("/api/admin/customers", { cache: "no-store" });
+        if (!response.ok) {
+          setFeedback("Customer data could not be loaded.");
+          return;
+        }
+
+        const result = (await response.json()) as { customers?: Customer[] };
+        setCustomers(result.customers ?? []);
+      } catch (error) {
+        console.error("CUSTOMER LOAD ERROR:", error);
+        setFeedback("Customer data could not be loaded.");
+      } finally {
+        setCustomersLoading(false);
+      }
+    };
+
+    void loadCustomers();
+  }, [loading, user]);
 
   const referralSummary = useMemo(() => getReferralSummary(orders), [orders]);
   const analyticsSummary = useMemo(() => getAnalyticsSummary(), []);
@@ -230,6 +267,10 @@ export default function AdminPage() {
   }, [orderFilter, orderRange, orderSearch, orders]);
 
   useEffect(() => {
+    if (loading || user?.role !== "admin") {
+      return;
+    }
+
     void (async () => {
       const [remoteProducts, remoteOrders, remotePayments, remoteSettings] = await Promise.all([
         fetchProductsFromSupabase(),
@@ -255,7 +296,7 @@ export default function AdminPage() {
         saveSettings(remoteSettings);
       }
     })();
-  }, []);
+  }, [loading, user?.role]);
 
   const canManage = useMemo(() => user?.role === "admin", [user]);
 
@@ -451,17 +492,117 @@ export default function AdminPage() {
     }
   };
 
+  const handleCampaignImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setUploadingCampaignImage(true);
+    const publicUrl = await uploadCampaignImage(file);
+    setUploadingCampaignImage(false);
+
+    if (publicUrl) {
+      setSettings((current) => ({ ...current, campaignImageUrl: publicUrl }));
+      setFeedback("Campaign image uploaded. Save settings to publish it.");
+    } else {
+      setFeedback("Campaign image upload is unavailable without Supabase storage configuration.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Admin dashboard</p>
-            <p className="mt-3 text-lg font-medium text-slate-700">Welcome, Mr Kondowe</p>
+            <p className="mt-3 font-serif text-2xl font-semibold italic tracking-wide text-[#8d6e63]">Welcome, Mr Kondowe</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">Manage products, orders, and payments</h1>
           </div>
           <Link href="/" className="text-sm font-medium text-violet-600">View storefront</Link>
         </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-violet-600">Customer data</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-900">Registered customers</h2>
+            <p className="mt-1 text-sm text-slate-600">Customer accounts are stored securely in Supabase.</p>
+          </div>
+          <span className="rounded-full bg-violet-50 px-3 py-1 text-sm font-medium text-violet-700">{customers.length} registered</span>
+        </div>
+        <div className="mt-6 overflow-x-auto">
+          {customersLoading ? (
+            <p className="text-sm text-slate-500">Loading customer data...</p>
+          ) : customers.length === 0 ? (
+            <p className="text-sm text-slate-500">No customer accounts registered yet.</p>
+          ) : (
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
+                  <th className="px-3 py-3 font-semibold">Customer</th>
+                  <th className="px-3 py-3 font-semibold">Email</th>
+                  <th className="px-3 py-3 font-semibold">Registered</th>
+                  <th className="px-3 py-3 font-semibold">Last sign in</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((customer) => (
+                  <tr key={customer.id} className="border-b border-slate-100 last:border-0">
+                    <td className="px-3 py-4 font-medium text-slate-900">{customer.name}</td>
+                    <td className="px-3 py-4 text-slate-600">{customer.email}</td>
+                    <td className="px-3 py-4 text-slate-600">{formatOrderDate(customer.createdAt)}</td>
+                    <td className="px-3 py-4 text-slate-600">{customer.lastSignInAt ? formatOrderDate(customer.lastSignInAt) : "Not yet"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-violet-200 bg-violet-50 p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-violet-600">Marketing</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-900">Featured campaign</h2>
+            <p className="mt-1 text-sm text-slate-600">Create an awareness day, seasonal theme, promotion, or announcement.</p>
+          </div>
+          <button onClick={saveStoreSettings} className="rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white">Save campaign</button>
+        </div>
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <select value={settings.campaignType} onChange={(event) => setSettings((current) => ({ ...current, campaignType: event.target.value as StoreSettings["campaignType"] }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <option>Promotion</option><option>Awareness day</option><option>Seasonal theme</option><option>Announcement</option>
+              </select>
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"><input type="checkbox" checked={settings.campaignActive} onChange={(event) => setSettings((current) => ({ ...current, campaignActive: event.target.checked }))} />Show on homepage</label>
+            </div>
+            <input value={settings.campaignEyebrow} onChange={(event) => setSettings((current) => ({ ...current, campaignEyebrow: event.target.value }))} placeholder="Campaign label" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+            <input value={settings.campaignTitle} onChange={(event) => setSettings((current) => ({ ...current, campaignTitle: event.target.value }))} placeholder="Campaign title" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+            <textarea value={settings.campaignDescription} onChange={(event) => setSettings((current) => ({ ...current, campaignDescription: event.target.value }))} placeholder="Campaign description" rows={3} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+            <label className="block text-sm font-medium text-slate-700">Campaign picture<input type="file" accept="image/*" onChange={handleCampaignImageUpload} className="mt-2 w-full rounded-2xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm" /></label>
+            {uploadingCampaignImage ? <p className="text-sm text-slate-500">Uploading campaign picture...</p> : null}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <input value={settings.campaignOffer} onChange={(event) => setSettings((current) => ({ ...current, campaignOffer: event.target.value }))} placeholder="Offer text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+              <input value={settings.campaignFooter} onChange={(event) => setSettings((current) => ({ ...current, campaignFooter: event.target.value }))} placeholder="Footer text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+            </div>
+          </div>
+          <div className="rounded-3xl border border-white bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Live preview</p>
+            <div className="mt-3 rounded-2xl bg-[#fbf7f2] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">{settings.campaignEyebrow} · {settings.campaignType}</p>
+              <p className="mt-2 text-xl font-semibold text-slate-900">{settings.campaignTitle || "Campaign title"}</p>
+              <p className="mt-2 text-sm text-slate-600">{settings.campaignDescription || "Campaign description"}</p>
+              <div className="mt-4 flex h-32 items-center justify-center overflow-hidden rounded-2xl bg-white text-6xl">
+                {settings.campaignImageUrl ? <div aria-label="Campaign picture preview" role="img" className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${settings.campaignImageUrl}")` }} /> : settings.campaignVisual}
+              </div>
+              <div className="mt-3 flex justify-between text-sm text-slate-600"><span>{settings.campaignFooter}</span><strong>{settings.campaignOffer}</strong></div>
+            </div>
+          </div>
+        </div>
+        {feedback ? <p className="mt-4 text-sm text-slate-600">{feedback}</p> : null}
       </section>
 
       <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
@@ -499,19 +640,19 @@ export default function AdminPage() {
 
           <div className="mt-8 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-slate-900">Products</h2>
-            <button onClick={() => { setEditingId(null); setDraftProduct({}); }} className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white">
+            <button type="button" onClick={() => { setEditingId(null); setDraftProduct({}); document.getElementById("product-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white">
               New product
             </button>
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div id="product-editor" className="mt-6 grid scroll-mt-8 gap-4 lg:grid-cols-2">
             <div className="space-y-3">
               <input placeholder="Name" value={draftProduct.name ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <input placeholder="Slug" value={draftProduct.slug ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, slug: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <input placeholder="Price" type="number" value={draftProduct.price ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, price: Number(event.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <input placeholder="Stock" type="number" value={draftProduct.stock ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, stock: Number(event.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <select value={draftProduct.category ?? "Face Care"} onChange={(event) => setDraftProduct((current) => ({ ...current, category: event.target.value as Product["category"] }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3">
-                {["Face Care", "Body Care", "Hair Care", "Men's Grooming", "Makeup", "Fragrances", "Accessories", "Baby Care"].map((category) => (
+                {["Face Care", "Body Care", "Hair Care", "Men's Grooming", "Apparel and footwear", "Fragrances", "Accessories", "Baby Care"].map((category) => (
                   <option key={category} value={category}>
                     {category}
                   </option>
@@ -528,7 +669,7 @@ export default function AdminPage() {
               <textarea placeholder="Short description" value={draftProduct.shortDescription ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, shortDescription: event.target.value }))} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <textarea placeholder="Description" value={draftProduct.description ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, description: event.target.value }))} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <textarea placeholder="Benefits (comma separated)" value={(draftProduct.benefits ?? []).join(", ")} onChange={(event) => setDraftProduct((current) => ({ ...current, benefits: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) }))} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3" />
-              <button onClick={saveProduct} className="w-full rounded-full bg-violet-600 px-4 py-3 font-semibold text-white">
+              <button type="button" onClick={saveProduct} className="w-full rounded-full bg-violet-600 px-4 py-3 font-semibold text-white">
                 {editingId ? "Update product" : "Add product"}
               </button>
               {feedback ? <p className="text-sm text-slate-600">{feedback}</p> : null}
@@ -543,8 +684,8 @@ export default function AdminPage() {
                   <p className="text-sm text-slate-500">{product.category} • K{product.price}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => { setEditingId(product.id); setDraftProduct(product); }} className="rounded-full border border-slate-200 px-3 py-2 text-sm">Edit</button>
-                  <button onClick={() => deleteProduct(product.id)} className="rounded-full bg-rose-600 px-3 py-2 text-sm text-white">Delete</button>
+                  <button type="button" onClick={() => { setEditingId(product.id); setDraftProduct(product); document.getElementById("product-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="rounded-full border border-slate-200 px-3 py-2 text-sm">Edit</button>
+                  <button type="button" onClick={() => deleteProduct(product.id)} className="rounded-full bg-rose-600 px-3 py-2 text-sm text-white">Delete</button>
                 </div>
               </div>
             ))}

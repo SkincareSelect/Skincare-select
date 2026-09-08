@@ -4,12 +4,17 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
 import type { AuthUser } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
+
+function getUserRole(profileRole: string | undefined, appRole: string | undefined): AuthUser["role"] {
+  if (profileRole === "orders_admin") return "orders_admin";
+  if (profileRole === "admin" || appRole === "admin") return "admin";
+  return "customer";
+}
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -111,7 +116,7 @@ export function AuthProvider({
           authUser.user_metadata?.full_name ||
           authUser.email?.split("@")[0] ||
           "User",
-        role: profile?.role === "admin" || authUser.app_metadata?.role === "admin" ? "admin" : "customer",
+        role: getUserRole(profile?.role, authUser.app_metadata?.role),
       };
 
       persistUser(nextUser);
@@ -125,6 +130,8 @@ export function AuthProvider({
 
   useEffect(() => {
     window.setTimeout(() => void loadSupabaseUser(), 0);
+    // The initial auth check intentionally runs once when the provider mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -162,7 +169,7 @@ export function AuthProvider({
           profile?.full_name ||
           data.user.user_metadata?.full_name ||
           email.split("@")[0],
-        role: profile?.role === "admin" || data.user.app_metadata?.role === "admin" ? "admin" : "customer",
+        role: getUserRole(profile?.role, data.user.app_metadata?.role),
       };
 
       persistUser(nextUser);
@@ -198,33 +205,36 @@ export function AuthProvider({
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: options?.name ?? email.split("@")[0],
-          },
-        },
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name: options?.name,
+        }),
       });
 
-      if (error) {
+      const result = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
         return {
           ok: false,
-          message: error.message,
+          message: result.message ?? "Unable to create account.",
         };
       }
 
-      if (!data.user) {
+      const signedIn = await signIn(email.trim().toLowerCase(), password);
+      if (!signedIn.ok) {
         return {
           ok: false,
-          message: "Account could not be created.",
+          message: signedIn.message,
         };
       }
 
       return {
         ok: true,
-        message: "Account created successfully. You can now sign in.",
+        message: "You have successfully registered.",
       };
     } catch (error) {
       console.error(error);
@@ -281,17 +291,14 @@ export function AuthProvider({
     persistUser(null);
   };
 
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      signIn,
-      signUp,
-      resetPassword,
-      signOut,
-    }),
-    [user, loading]
-  );
+  const value = {
+    user,
+    loading,
+    signIn,
+    signUp,
+    resetPassword,
+    signOut,
+  };
 
   return (
     <AuthContext.Provider value={value}>

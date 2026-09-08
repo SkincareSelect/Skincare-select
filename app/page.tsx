@@ -2,12 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { categories, initialProducts } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-server";
+import { fetchCampaignFromSupabase } from "@/app/lib/supabase/data-server";
 import { ProductSection } from "@/app/components/product-section";
 import { ProductCarousel } from "@/app/components/product-carousel";
 import { ProductThumb } from "@/app/components/product-thumb";
+import { FeaturedCampaign } from "@/app/components/featured-campaign";
 
 export default async function HomePage() {
   const products = await fetchProductsFromSupabase();
+  const campaign = await fetchCampaignFromSupabase();
   const catalogue = products.length > 0 ? products : initialProducts;
   const featuredProducts = catalogue.filter((product) => product.featured).slice(0, 6);
   const newArrivals = catalogue.filter((product) => product.newArrival).slice(0, 4);
@@ -26,7 +29,7 @@ export default async function HomePage() {
               Discover carefully selected skincare, beauty and personal-care products for every member of the family.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/shop" className="rounded-full bg-[#2f241f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1f1713]">
+              <Link href="/shop" className="rounded-full border border-[#eadfce] bg-[#fbf7f2] px-6 py-3 text-sm font-semibold text-[#2f241f] shadow-sm transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]">
                 SHOP NOW
               </Link>
               <Link href="/#categories" className="rounded-full border border-[#eadfce] bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#d8c1b1] hover:text-[#2f241f]">
@@ -37,7 +40,7 @@ export default async function HomePage() {
               {[
                 ["Carefully selected", "Products chosen for quality and trust."],
                 ["Secure shopping", "Simple checkout with local payment options."],
-                ["Zambia delivery", "Serving customers across the country."],
+                ["Zambia delivery", "Lusaka and countrywide deliveries are available for a fee. Charges vary by destination."],
               ].map(([title, description]) => (
                 <div key={title} className="rounded-[1.5rem] border border-[#eadfce] bg-[#fbf7f2] p-4">
                   <p className="font-semibold text-slate-900">{title}</p>
@@ -48,20 +51,7 @@ export default async function HomePage() {
           </div>
 
           <div className="rounded-[2.25rem] bg-[radial-gradient(circle_at_top,_#f7ece5,_#fff_70%)] p-6 sm:p-8">
-            <div className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Featured campaign</p>
-              <h2 className="mt-3 text-2xl font-semibold text-slate-900">Soft glow essentials</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Cleanser, serum and body care picks designed to keep your routine simple, elegant and effective.
-              </p>
-              <div className="mt-6 flex items-center justify-center rounded-[1.75rem] bg-[#fbf7f2] py-12 text-8xl">
-                ✨
-              </div>
-              <div className="mt-6 flex items-center justify-between text-sm text-slate-600">
-                <span>New customer savings available</span>
-                <span className="font-semibold text-slate-900">From K185</span>
-              </div>
-            </div>
+            <FeaturedCampaign initialCampaign={campaign} />
           </div>
         </div>
       </section>
@@ -76,7 +66,7 @@ export default async function HomePage() {
           {categories.map((category) => (
             <Link
               key={category.label}
-              href="/shop"
+              href={`/shop?category=${encodeURIComponent(category.label)}#products`}
               className="group rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#d8c1b1] hover:shadow-md"
             >
               <div className="relative h-32 overflow-hidden rounded-[1.5rem]">

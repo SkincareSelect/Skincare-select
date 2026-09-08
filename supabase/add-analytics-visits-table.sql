@@ -21,6 +21,7 @@ create table if not exists public.analytics_visits (
 create index if not exists analytics_visits_period_idx on public.analytics_visits (period, "periodKey");
 
 alter table public.analytics_visits enable row level security;
+grant insert, update on table public.analytics_visits to anon, authenticated;
 
 -- Any visitor's browser writes a visit entry (anon key), so inserts/updates
 -- must be public, but only admins should be able to read the aggregated data.

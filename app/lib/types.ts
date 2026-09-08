@@ -3,7 +3,7 @@ export type ProductCategory =
   | "Body Care"
   | "Hair Care"
   | "Men's Grooming"
-  | "Makeup"
+  | "Apparel and footwear"
   | "Fragrances"
   | "Accessories"
   | "Baby Care";
@@ -145,6 +145,15 @@ export interface StoreSettings {
   deliveryFee: number;
   currency?: string;
   businessHours: string;
+  campaignEyebrow: string;
+  campaignType: "Promotion" | "Awareness day" | "Seasonal theme" | "Announcement";
+  campaignActive: boolean;
+  campaignTitle: string;
+  campaignDescription: string;
+  campaignVisual: string;
+  campaignImageUrl?: string;
+  campaignFooter: string;
+  campaignOffer: string;
   socialLinks: {
     instagram: string;
     facebook: string;
@@ -156,5 +165,5 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: "customer" | "admin";
+  role: "customer" | "admin" | "orders_admin";
 }

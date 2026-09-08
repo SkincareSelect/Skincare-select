@@ -7,7 +7,6 @@ import type {
   ProductCategory,
   StoreSettings,
 } from "@/app/lib/types";
-import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 
 export const categories: Array<{
   label: ProductCategory;
@@ -19,7 +18,7 @@ export const categories: Array<{
   {
     label: "Face Care",
     description: "Cleansers, serums, moisturizers and daily skin essentials, including our Korean Skincare (K-beauty) collection.",
-    image: "https://images.unsplash.com/photo-1527203561188-dae1bc1a417f?auto=format&fit=crop&w=800&q=80",
+    image: "/images/face-care-category.jpe",
   },
   {
     label: "Body Care",
@@ -37,9 +36,9 @@ export const categories: Array<{
     image: "/images/mens-grooming-category.jpe",
   },
   {
-    label: "Makeup",
-    description: "Base, eye, lip and beauty tools for every look.",
-    image: "https://images.unsplash.com/photo-1593351799227-75df2026356b?auto=format&fit=crop&w=800&q=80",
+    label: "Apparel and footwear",
+    description: "Everyday footwear and clothing essentials.",
+    image: "/images/footwear-clothes-category.jpe",
   },
   {
     label: "Fragrances",
@@ -48,8 +47,8 @@ export const categories: Array<{
   },
   {
     label: "Accessories",
-    description: "Beauty tools, brushes, mirrors and organizers.",
-    image: "https://images.unsplash.com/photo-1592520113018-180c8bc831c9?auto=format&fit=crop&w=800&q=80",
+    description: "Lip, eye and base products, plus beauty tools and organizers.",
+    image: "/images/accessories-category.jpe",
   },
   {
     label: "Baby Care",
@@ -221,8 +220,8 @@ export const initialProducts: Product[] = [
     id: "prod-5",
     name: "Velvet Lash Mascara",
     slug: "velvet-lash-mascara",
-    category: "Makeup",
-    subcategory: "Eye Makeup",
+    category: "Accessories",
+    subcategory: "Eye",
     brand: "Maison Glow",
     sku: "SS-MK-MAS-005",
     productType: "Mascara",
@@ -277,7 +276,7 @@ export const initialProducts: Product[] = [
     name: "Beauty Brush Set",
     slug: "beauty-brush-set",
     category: "Accessories",
-    subcategory: "Beauty Tools",
+    subcategory: "Base",
     brand: "Select Tools",
     sku: "SS-AC-BRS-007",
     productType: "Brush Set",
@@ -1436,22 +1435,22 @@ export const initialSettings: StoreSettings = {
   storeLogo: "/favicon.ico",
   storeEmail: "hello@skincareselect.co.zm",
   phoneNumber: "+260954035093",
-  whatsappNumber: "+260954035093",
+  whatsappNumber: "+260973970079",
   mtnNumber: "+260770000001",
-  airtelNumber: "+260960000001",
+  airtelNumber: "+260973970079",
   zamtelNumber: "+260954035093",
   bankName: "Zanaco",
   bankAccountName: "Zhurie & Co Zambia",
   bankAccountNumber: "0101234567",
   bankBranch: "Lusaka",
   supportEmail: "hello@skincareselect.co.zm",
-  supportPhone: "+260977000000",
+  supportPhone: "+260954035093",
   paymentNumbers: {
     "MTN Mobile Money": "+260770000001",
-    "Airtel Money": "+260960000001",
+    "Airtel Money": "+260973970079",
     "Zamtel Money": "+260954035093",
     "Bank Transfer": "0101234567",
-    "Cash on Delivery": "+260977000000",
+    "Cash on Delivery": "+260954035093",
   },
   bankDetails: {
     accountName: "Zhurie & Co Zambia",
@@ -1463,6 +1462,15 @@ export const initialSettings: StoreSettings = {
   deliveryFee: 50,
   currency: "ZMW",
   businessHours: "Mon-Sat: 8:00 AM - 8:00 PM",
+  campaignEyebrow: "Featured campaign",
+  campaignType: "Promotion",
+  campaignActive: true,
+  campaignTitle: "Soft glow essentials",
+  campaignDescription: "Cleanser, serum and body care picks designed to keep your routine simple, elegant and effective.",
+  campaignVisual: "✨",
+  campaignImageUrl: "",
+  campaignFooter: "New customer savings available",
+  campaignOffer: "From K185",
   socialLinks: {
     instagram: "https://instagram.com/skincareselect",
     facebook: "https://facebook.com/skincareselect",
@@ -1571,16 +1579,18 @@ export async function recordVisitAnalytics() {
   saveAnalyticsEntries(nextEntries);
   sessionStorage.setItem(sessionKey, "true");
 
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) {
-    return;
-  }
+  try {
+    const response = await fetch("/api/analytics", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nextEntries.slice(-3)),
+    });
 
-  for (const entry of nextEntries) {
-    const { error } = await supabase.from("analytics_visits").upsert(entry, { onConflict: "id" });
-    if (error) {
-      console.warn("Analytics sync failed:", error.message);
+    if (!response.ok) {
+      throw new Error(`Analytics sync failed with status ${response.status}.`);
     }
+  } catch (error) {
+    console.warn("Analytics sync failed:", error instanceof Error ? error.message : "Unknown error.");
   }
 }
 
@@ -1634,7 +1644,7 @@ export function savePayments(payments: Payment[]) {
 }
 
 export function getSettings(): StoreSettings {
-  return safeRead<StoreSettings>(STORAGE_KEYS.settings, initialSettings);
+  return { ...initialSettings, ...safeRead<Partial<StoreSettings>>(STORAGE_KEYS.settings, {}) };
 }
 
 export function saveSettings(settings: StoreSettings) {

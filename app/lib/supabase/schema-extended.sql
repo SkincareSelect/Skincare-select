@@ -3,7 +3,7 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
-  role text not null default 'customer',
+  role text not null default 'customer' check (role in ('customer','admin','orders_admin')),
   created_at timestamptz not null default now()
 );
 
@@ -113,6 +113,15 @@ create table if not exists public.store_settings (
   support_phone text not null default '+260977000000',
   delivery_fee numeric not null default 20,
   business_hours text not null default 'Mon-Sat 8:00 AM - 8:00 PM',
+  campaign_eyebrow text not null default 'Featured campaign',
+  campaign_type text not null default 'Promotion',
+  campaign_active boolean not null default true,
+  campaign_title text not null default 'Soft glow essentials',
+  campaign_description text not null default 'Cleanser, serum and body care picks designed to keep your routine simple, elegant and effective.',
+  campaign_visual text not null default '✨',
+  campaign_image_url text not null default '',
+  campaign_footer text not null default 'New customer savings available',
+  campaign_offer text not null default 'From K185',
   social_links jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );

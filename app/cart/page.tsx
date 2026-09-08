@@ -75,6 +75,9 @@ export default function CartPage() {
           <span>Delivery fee</span>
           <span>{formatPrice(deliveryFee)}</span>
         </div>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          Lusaka and countrywide deliveries are available. Fees vary by destination and are confirmed with your delivery details.
+        </p>
         <div className="mt-6 border-t border-[#eadfce] pt-6 text-lg font-semibold text-slate-900">
           <div className="flex items-center justify-between">
             <span>Total</span>

@@ -6,7 +6,7 @@ export async function updateOrder(formData:FormData){
  const { data: { user } } = await s.auth.getUser();
  if (!user) throw new Error("Authentication required.");
  const { data: profile } = await s.from("profiles").select("role").eq("id", user.id).maybeSingle();
- if (profile?.role !== "admin") throw new Error("Administrator access required.");
+ if (profile?.role !== "admin" && profile?.role !== "orders_admin") throw new Error("Administrator access required.");
  const id=String(formData.get("id"));const status=String(formData.get("status"));
  const courierName=String(formData.get("courier_name")||"")||null;
  const { data: currentOrder, error: currentOrderError } = await s.from("orders").select("courier_assigned_at,picked_up_at,dispatched_at,delivered_at").eq("id",id).single();

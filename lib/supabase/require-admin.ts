@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function requireAdmin() {
+export async function requireAdmin(allowedRoles: Array<"admin" | "orders_admin"> = ["admin"]) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -17,7 +17,7 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profileError || profile?.role !== "admin") {
+  if (profileError || !allowedRoles.includes(profile?.role)) {
     redirect("/");
   }
 
