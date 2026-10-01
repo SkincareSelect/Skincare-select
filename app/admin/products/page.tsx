@@ -9,9 +9,9 @@ type AdminProduct = {
   description: string | null;
   category: string;
   price: number;
-  original_price: number | null;
+  originalPrice: number | null;
   stock: number;
-  tag: string | null;
+  badge: string | null;
   image: string | null;
   hidden: boolean;
 };
@@ -69,11 +69,7 @@ export default async function Products() {
 
                   <details>
                     <summary>Edit</summary>
-                    <ProductForm product={{
-                      ...p,
-                      originalPrice: p.original_price,
-                      badge: p.tag,
-                    }} />
+                    <ProductForm product={p} />
                   </details>
                 </td>
 
@@ -106,7 +102,7 @@ export default async function Products() {
   );
 }
 
-function ProductForm({ product }: { product?: AdminProduct & { originalPrice?: number | null; badge?: string | null } }) {
+function ProductForm({ product }: { product?: AdminProduct }) {
   return (
     <form
       action={saveProduct}
