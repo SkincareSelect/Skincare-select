@@ -1433,7 +1433,7 @@ export const initialProducts: Product[] = [
 export const initialSettings: StoreSettings = {
   storeName: "Zhurie & Co",
   storeLogo: "/favicon.ico",
-  storeEmail: "hello@skincareselect.co.zm",
+  storeEmail: "zhurieandco.offers@gmail.com",
   phoneNumber: "+260954035093",
   whatsappNumber: "+260973970079",
   mtnNumber: "+260770000001",
@@ -1443,7 +1443,7 @@ export const initialSettings: StoreSettings = {
   bankAccountName: "Zhurie & Co Zambia",
   bankAccountNumber: "0101234567",
   bankBranch: "Lusaka",
-  supportEmail: "hello@skincareselect.co.zm",
+  supportEmail: "zhurieandco.offers@gmail.com",
   supportPhone: "+260954035093",
   paymentNumbers: {
     "MTN Mobile Money": "+260770000001",

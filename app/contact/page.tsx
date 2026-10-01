@@ -12,7 +12,12 @@ export default function ContactPage() {
         <p>Beauty consultant (WhatsApp): {settings.whatsappNumber}</p>
         <p>Zamtel Money: {settings.zamtelNumber}</p>
         <p>Airtel Money: {settings.airtelNumber}</p>
-        <p>Email: {settings.storeEmail}</p>
+        <p>
+          Email:{" "}
+          <a href={`mailto:${settings.storeEmail}`} className="underline underline-offset-2">
+            {settings.storeEmail}
+          </a>
+        </p>
         <p>Business hours: {settings.businessHours}</p>
       </div>
     </div>
