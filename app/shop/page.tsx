@@ -43,6 +43,14 @@ function normalizeCategory(value: string | null): ProductCategory | "All" {
   return value.trim().toLowerCase() === "fragrance" ? "Fragrances" : "All";
 }
 
+function scrollToProducts() {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
 const koreanSkinConcernFilters = [
   "Dark Spots",
   "Acne & Blemishes",
@@ -63,12 +71,7 @@ const koreanSkinTypeFilters = ["All Skin Types", "Oily", "Dry", "Combination", "
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [category, setCategory] = useState<ProductCategory | "All">(() => {
-    if (typeof window === "undefined") {
-      return "All";
-    }
-    return normalizeCategory(new URLSearchParams(window.location.search).get("category"));
-  });
+  const [category, setCategory] = useState<ProductCategory | "All">("All");
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const { addItem } = useCart();
@@ -78,6 +81,42 @@ export default function ShopPage() {
       setProducts(nextProducts ?? initialProducts);
     });
   }, []);
+
+  useEffect(() => {
+    const syncCategoryFromUrl = () => {
+      setCategory(normalizeCategory(new URLSearchParams(window.location.search).get("category")));
+      setQuery("");
+      setActiveFilters([]);
+    };
+
+    syncCategoryFromUrl();
+    window.addEventListener("popstate", syncCategoryFromUrl);
+    return () => window.removeEventListener("popstate", syncCategoryFromUrl);
+  }, []);
+
+  useEffect(() => {
+    if (window.location.hash === "#products") {
+      scrollToProducts();
+    }
+  }, [category, products.length]);
+
+  const selectCategory = (nextCategory: ProductCategory | "All") => {
+    setCategory(nextCategory);
+    setQuery("");
+    setActiveFilters([]);
+
+    const url = new URL(window.location.href);
+    if (nextCategory === "All") {
+      url.searchParams.delete("category");
+    } else {
+      url.searchParams.set("category", nextCategory);
+    }
+    url.hash = "products";
+    window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    if (nextCategory === category) {
+      scrollToProducts();
+    }
+  };
 
   const toggleFilter = (filter: string) => {
     setActiveFilters((current) =>
@@ -134,7 +173,7 @@ export default function ShopPage() {
 
       <section className="scroll-mt-28 flex flex-wrap gap-3" id="categories">
         <button
-          onClick={() => setCategory("All")}
+          onClick={() => selectCategory("All")}
           className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
             category === "All"
               ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
@@ -146,7 +185,7 @@ export default function ShopPage() {
         {categories.map((item) => (
           <button
             key={item.label}
-            onClick={() => setCategory(item.label)}
+            onClick={() => selectCategory(item.label)}
             className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
               category === item.label
                 ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
