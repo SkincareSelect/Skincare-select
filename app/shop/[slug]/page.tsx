@@ -24,7 +24,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ slug:
         if (cancelled) {
           return;
         }
-        const catalogue = products.length > 0 ? products : initialProducts;
+        const catalogue = products ?? initialProducts;
         setProduct(catalogue.find((candidate) => candidate.slug === resolvedSlug) ?? null);
       });
     });

@@ -9,9 +9,9 @@ type AdminProduct = {
   description: string | null;
   category: string;
   price: number;
-  originalPrice: number | null;
+  original_price: number | null;
   stock: number;
-  badge: string | null;
+  tag: string | null;
   image: string | null;
   hidden: boolean;
 };
@@ -19,10 +19,14 @@ type AdminProduct = {
 export default async function Products() {
   const s = await requireAdmin();
 
-  const { data = [] } = await s
+  const { data, error } = await s
     .from("products")
     .select("*")
-    .order("createdAt", { ascending: false });
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("ADMIN PRODUCT LOAD ERROR:", error);
+    throw new Error("Products could not be loaded from Supabase.");
+  }
 
   return (
     <>
@@ -56,7 +60,7 @@ export default async function Products() {
           </thead>
 
           <tbody>
-            {(data || []).map((p: AdminProduct) => (
+            {(data ?? []).map((p: AdminProduct) => (
               <tr key={p.id}>
                 <td>
                   <b>{p.name}</b>
@@ -65,7 +69,11 @@ export default async function Products() {
 
                   <details>
                     <summary>Edit</summary>
-                    <ProductForm product={p} />
+                    <ProductForm product={{
+                      ...p,
+                      originalPrice: p.original_price,
+                      badge: p.tag,
+                    }} />
                   </details>
                 </td>
 
@@ -98,7 +106,7 @@ export default async function Products() {
   );
 }
 
-function ProductForm({ product }: { product?: AdminProduct }) {
+function ProductForm({ product }: { product?: AdminProduct & { originalPrice?: number | null; badge?: string | null } }) {
   return (
     <form
       action={saveProduct}
@@ -199,7 +207,7 @@ function ProductForm({ product }: { product?: AdminProduct }) {
         <input
           style={{ width: "auto" }}
           type="checkbox"
-          name="hidden"
+          name="visible"
           defaultChecked={!product?.hidden}
         />
 

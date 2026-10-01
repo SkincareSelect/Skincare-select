@@ -75,7 +75,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     void fetchProductsFromSupabase().then((nextProducts) => {
-      setProducts(nextProducts.length > 0 ? nextProducts : initialProducts);
+      setProducts(nextProducts ?? initialProducts);
     });
   }, []);
 

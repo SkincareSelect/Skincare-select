@@ -272,28 +272,35 @@ export default function AdminPage() {
     }
 
     void (async () => {
-      const [remoteProducts, remoteOrders, remotePayments, remoteSettings] = await Promise.all([
-        fetchProductsFromSupabase(),
-        fetchOrdersFromSupabase(),
-        fetchPaymentsFromSupabase(),
-        fetchSettingsFromSupabase(),
-      ]);
+      try {
+        const [remoteProducts, remoteOrders, remotePayments, remoteSettings] = await Promise.all([
+          fetchProductsFromSupabase(),
+          fetchOrdersFromSupabase(),
+          fetchPaymentsFromSupabase(),
+          fetchSettingsFromSupabase(),
+        ]);
 
-      if (remoteProducts.length > 0) {
-        setProducts(remoteProducts);
-        saveProducts(remoteProducts);
-      }
-      if (remoteOrders.length > 0) {
-        setOrders(remoteOrders);
-        saveOrders(remoteOrders);
-      }
-      if (remotePayments.length > 0) {
-        setPayments(remotePayments);
-        savePayments(remotePayments);
-      }
-      if (remoteSettings) {
-        setSettings(remoteSettings);
-        saveSettings(remoteSettings);
+        if (remoteProducts) {
+          setProducts(remoteProducts);
+          saveProducts(remoteProducts);
+        } else {
+          setFeedback("Products could not be loaded from Supabase. Check the browser console for details.");
+        }
+        if (remoteOrders.length > 0) {
+          setOrders(remoteOrders);
+          saveOrders(remoteOrders);
+        }
+        if (remotePayments.length > 0) {
+          setPayments(remotePayments);
+          savePayments(remotePayments);
+        }
+        if (remoteSettings) {
+          setSettings(remoteSettings);
+          saveSettings(remoteSettings);
+        }
+      } catch (error) {
+        console.error("ADMIN DATA LOAD ERROR:", error);
+        setFeedback("Admin data could not be loaded from Supabase.");
       }
     })();
   }, [loading, user?.role]);
@@ -312,9 +319,9 @@ export default function AdminPage() {
     );
   }
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     const payload: Product = {
-      id: editingId ?? `prod-${Date.now()}`,
+      id: editingId ?? crypto.randomUUID(),
       name: draftProduct.name ?? "Untitled product",
       slug: draftProduct.slug ?? (draftProduct.name ?? "untitled").toLowerCase().replace(/\s+/g, "-"),
       category: draftProduct.category ?? "Face Care",
@@ -329,18 +336,33 @@ export default function AdminPage() {
     };
 
     const nextProducts = editingId ? products.map((product) => (product.id === editingId ? payload : product)) : [payload, ...products];
-    setProducts(nextProducts);
-    saveProducts(nextProducts);
-    void upsertProductToSupabase(payload);
+    try {
+      await upsertProductToSupabase(payload);
+      setProducts(nextProducts);
+      saveProducts(nextProducts);
+      setFeedback("Product saved to Supabase.");
+    } catch (err) {
+      setFeedback(err instanceof Error ? `Could not save product: ${err.message}` : "Could not save product to Supabase.");
+      console.error("Supabase upsert error:", err);
+      return;
+    }
+
     setDraftProduct({});
     setEditingId(null);
   };
 
-  const deleteProduct = (id: string) => {
-    const nextProducts = products.filter((product) => product.id !== id);
-    setProducts(nextProducts);
-    saveProducts(nextProducts);
-    void deleteProductFromSupabase(id);
+  const deleteProduct = async (id: string) => {
+    try {
+      await deleteProductFromSupabase(id);
+
+      const nextProducts = products.filter((product) => product.id !== id);
+      setProducts(nextProducts);
+      saveProducts(nextProducts);
+      setFeedback("Product deleted from Supabase.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? `Could not delete product: ${error.message}` : "Could not delete product from Supabase.");
+      console.error("Supabase product delete error:", error);
+    }
   };
 
   const updateOrderStatus = (id: string, status: OrderStatus) => {

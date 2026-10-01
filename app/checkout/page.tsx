@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Building2, RadioTower } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { useAuth } from "@/app/components/auth-provider";
@@ -14,7 +13,6 @@ import {
   saveOrders,
   savePayments,
 } from "@/app/lib/store-data";
-import { upsertOrderToSupabase, upsertPaymentToSupabase } from "@/app/lib/supabase/data-client";
 import type { Order, Payment, PaymentMethod } from "@/app/lib/types";
 
 type AvailablePaymentMethod = "Airtel Money" | "Zamtel Money";
@@ -32,8 +30,8 @@ function formatPrice(value: number) {
 function getPaymentInstructions(method: PaymentMethod, settings: ReturnType<typeof getSettings>) {
   const details: Record<PaymentMethod, string> = {
     "MTN Mobile Money": `Send payment to ${settings.mtnNumber}.`,
-    "Airtel Money": `Send payment to ${settings.airtelNumber}.`,
-    "Zamtel Money": `Send payment to ${settings.zamtelNumber}.`,
+    "Airtel Money": "Send payment to +260 973 970 079.",
+    "Zamtel Money": "Send payment to +260 954 035 093.",
     "Bank Transfer": `Transfer to ${settings.bankName}, ${settings.bankAccountName}, account ${settings.bankAccountNumber}, ${settings.bankBranch}.`,
     "Cash on Delivery": "Pay the courier in cash when your order arrives.",
   };
@@ -46,7 +44,6 @@ function buildOrderNumber(existingCount: number) {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
   const settings = getSettings();
@@ -58,10 +55,10 @@ export default function CheckoutPage() {
   const [area, setArea] = useState("");
   const [notes, setNotes] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<AvailablePaymentMethod>("Airtel Money");
+  const [paymentMethod, setPaymentMethod] = useState<AvailablePaymentMethod | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
   const [status, setStatus] = useState("Ready to place order");
   const [loading, setLoading] = useState(false);
-  const [confirmedOrder, setConfirmedOrder] = useState<{ number: string; total: number } | null>(null);
 
   const normalizedReferralCode = normalizeReferralCode(referralCode);
   const referralReward = getReferralReward(normalizedReferralCode);
@@ -79,6 +76,16 @@ export default function CheckoutPage() {
 
     if (referralCode && !referralReward) {
       setStatus("That referral code is not valid. Please check the code and try again.");
+      return;
+    }
+
+    if (!paymentMethod) {
+      setStatus("Please choose a payment method.");
+      return;
+    }
+
+    if (!paymentReference.trim()) {
+      setStatus("Enter the payment confirmation reference before submitting.");
       return;
     }
 
@@ -121,6 +128,7 @@ export default function CheckoutPage() {
         delivery_method: "Standard delivery",
         delivery_fee: deliveryFee,
         payment_method: paymentMethod,
+        payment_reference: paymentReference.trim(),
         subtotal,
         total,
         referral_code: normalizedReferralCode || null,
@@ -142,74 +150,26 @@ export default function CheckoutPage() {
     }
 
     const result = await response.json() as { order_id?: string; payment_id?: string; payment_reference?: string; order_number?: string };
-    let paymentStatus: Payment["status"] = "pending";
-    let paymentMessage = `Order ${orderNumber} placed.`;
-    let paymentUrl: string | undefined;
-    if (result.order_id && result.payment_id) {
-      const paymentResponse = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "initiate", order_id: result.order_id, payment_method: paymentMethod, phone, reference: result.payment_reference }),
-      });
-      const paymentResult = await paymentResponse.json() as { status?: Payment["status"]; message?: string; paymentUrl?: string };
-      paymentStatus = paymentResult.status ?? "pending";
-      paymentMessage = paymentResult.message ?? "Payment pending provider confirmation.";
-      paymentUrl = paymentResult.paymentUrl;
-    }
     const payment: Payment = {
       id: `payment-${orderNumber}`,
       orderId: order.id,
       paymentMethod,
-      reference: result.payment_reference ?? "",
+      reference: paymentReference.trim(),
       amount: total,
-      status: paymentStatus,
+      status: "pending",
       createdAt,
       updatedAt: createdAt,
     };
-    const savedOrder: Order = paymentStatus === "paid"
-      ? { ...order, status: "Payment Confirmed", paymentStatus: "paid" }
-      : order;
-
-    const nextOrders = [savedOrder, ...getOrders()];
+    const nextOrders = [order, ...getOrders()];
     saveOrders(nextOrders);
 
     const nextPayments = [payment, ...getPayments()];
     savePayments(nextPayments);
 
-    void upsertOrderToSupabase(savedOrder);
-    void upsertPaymentToSupabase(payment);
-
     clearCart();
     setLoading(false);
-    if (paymentUrl) {
-      // DPO hosted checkout: send the customer to DPO's secure payment page.
-      // The webhook/return route will mark the order paid once DPO confirms.
-      window.location.assign(paymentUrl);
-      return;
-    }
-    if (paymentStatus === "paid") {
-      setConfirmedOrder({ number: result.order_number ?? orderNumber, total });
-      return;
-    }
-    setStatus(`Order submitted successfully. ${paymentMessage} Order ${orderNumber}.`);
+    setStatus(`Payment reference submitted for verification. Order ${result.order_number ?? orderNumber}.`);
   };
-
-  if (confirmedOrder) {
-    return (
-      <main className="mx-auto w-full max-w-2xl rounded-[2rem] border border-[#eadfce] bg-white p-8 text-center shadow-sm sm:p-12">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">✓</div>
-        <h1 className="mt-6 text-3xl font-semibold text-slate-900">Thank You for Shopping with Zhurie &amp; Co.</h1>
-        <p className="mt-4 text-slate-600">Your order has been successfully placed and your payment has been confirmed.</p>
-        <p className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-[#8d6e63]">Order number</p>
-        <p className="mt-2 text-lg font-semibold text-slate-900">#{confirmedOrder.number}</p>
-        <p className="mt-4 text-2xl font-bold text-emerald-700">{formatPrice(confirmedOrder.total)} Paid</p>
-        <p className="mt-6 text-slate-600">We&apos;re getting your order ready. You&apos;ll receive an update when your order is ready for delivery.</p>
-        <p className="mt-6 text-slate-700">🎁 <strong>Look out for rewards and exclusive discounts!</strong></p>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Keep shopping with Zhurie &amp; Co. to earn rewards and enjoy special discounts, promotions and exclusive offers.</p>
-        <button type="button" onClick={() => router.push("/account")} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white transition hover:bg-[#1f1713]">Continue</button>
-      </main>
-    );
-  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
@@ -277,11 +237,25 @@ export default function CheckoutPage() {
                </label>
              ))}
           </div>
-          <p className="mt-2 rounded-2xl bg-[#fbf7f2] px-4 py-3 text-sm text-slate-600">{getPaymentInstructions(paymentMethod, settings)}</p>
-          <div className="mt-4 rounded-2xl border border-[#eadfce] bg-white px-4 py-4">
-             <p className="text-sm font-medium text-slate-500">Amount to pay</p>
-             <p className="mt-1 text-2xl font-semibold text-slate-900">{formatPrice(total)}</p>
-          </div>
+
+          {!paymentMethod ? (
+            <p className="mt-2 rounded-2xl bg-[#fffaf0] px-4 py-3 text-sm text-slate-600">Choose a payment method to see the amount, payment instructions and to submit a confirmation reference.</p>
+          ) : (
+            <>
+              <div className="mt-4 rounded-2xl border border-[#eadfce] bg-white px-4 py-4">
+                <p className="text-sm font-medium text-slate-500">Amount to pay</p>
+                <p className="mt-1 text-2xl font-semibold text-slate-900">{formatPrice(total)}</p>
+              </div>
+
+              <p className="mt-2 rounded-2xl bg-[#fbf7f2] px-4 py-3 text-sm text-slate-600">{getPaymentInstructions(paymentMethod, settings)}</p>
+
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-medium text-slate-700">Payment confirmation / reference</label>
+                <input placeholder="Enter transaction reference (e.g. 123456)" value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} className="w-full rounded-2xl border border-[#eadfce] px-4 py-3" required />
+                <p className="mt-2 text-sm text-slate-500">After sending the payment to the provider number, enter the transaction reference here and submit to confirm your payment.</p>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mt-4">
@@ -289,10 +263,10 @@ export default function CheckoutPage() {
           <textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-24 w-full rounded-2xl border border-[#eadfce] px-4 py-3" />
         </div>
 
-        <button type="submit" disabled={loading} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
-          {loading ? "Placing order..." : "Place order"}
+        <button type="submit" disabled={loading || !paymentMethod} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
+          {loading ? "Submitting payment..." : "Submit payment"}
         </button>
-        <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${status.startsWith("Order submitted successfully") ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`} role="status">{status}</p>
+        <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${status.startsWith("Payment reference submitted") ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`} role="status">{status}</p>
       </form>
 
       <aside className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">

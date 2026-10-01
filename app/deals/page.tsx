@@ -20,7 +20,7 @@ export default function DealsPage() {
     let cancelled = false;
     void fetchProductsFromSupabase().then((nextProducts) => {
       if (cancelled) return;
-      setProducts(nextProducts.length > 0 ? nextProducts : initialProducts);
+      setProducts(nextProducts ?? initialProducts);
     });
     return () => {
       cancelled = true;

@@ -1,18 +1,20 @@
 import type { Payment, Product, Order, StoreSettings } from "@/app/lib/types";
 import { createSupabaseServerClient } from "@/app/lib/supabase/server";
+import { mapSupabaseProduct } from "@/app/lib/supabase/product-mapper";
 
 export async function fetchProductsFromSupabase() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    return [] as Product[];
+    return null;
   }
 
   const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
   if (error || !data) {
-    return [] as Product[];
+    console.error("PRODUCT LOAD ERROR:", error ?? "Supabase returned no product data.");
+    return null;
   }
 
-  return data as Product[];
+  return data.map((row) => mapSupabaseProduct(row));
 }
 
 export async function fetchOrdersFromSupabase() {

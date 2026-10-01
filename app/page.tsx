@@ -12,7 +12,7 @@ import { SectionLink } from "@/app/components/section-link";
 export default async function HomePage() {
   const products = await fetchProductsFromSupabase();
   const campaign = await fetchCampaignFromSupabase();
-  const catalogue = products.length > 0 ? products : initialProducts;
+  const catalogue = products ?? initialProducts;
   const featuredProducts = catalogue.filter((product) => product.featured).slice(0, 6);
   const newArrivals = catalogue.filter((product) => product.newArrival).slice(0, 4);
   const bestSellers = catalogue.filter((product) => product.bestSeller).slice(0, 4);

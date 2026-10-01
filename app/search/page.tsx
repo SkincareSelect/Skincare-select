@@ -13,7 +13,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     void fetchProductsFromSupabase().then((nextProducts) => {
-      setProducts(nextProducts.length > 0 ? nextProducts : initialProducts);
+      setProducts(nextProducts ?? initialProducts);
     });
   }, []);
 

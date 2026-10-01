@@ -1,10 +1,29 @@
--- Run this after the previous scripts. The products table has a check constraint
--- restricting which "category" values are allowed, which doesn't include all the
--- categories the Zhurie & Co app actually uses (Arabic Perfumes, Korean Skincare, etc).
--- This drops that old constraint and replaces it with one that allows every
--- category defined in app/lib/types.ts (ProductCategory).
+-- Keep the Supabase product category constraint aligned with ProductCategory.
+-- Remove older category check constraints before normalizing legacy values.
+do $$
+declare
+  category_constraint text;
+begin
+  for category_constraint in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.products'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%category%'
+  loop
+    execute format('alter table public.products drop constraint %I', category_constraint);
+  end loop;
+end
+$$;
 
-alter table public.products drop constraint if exists products_category_check;
+update public.products set category = 'Face Care' where category = 'Face';
+update public.products set category = 'Body Care' where category = 'Body';
+update public.products set category = 'Men''s Grooming' where category = 'Men';
+update public.products set category = 'Hair Care' where category = 'Hair';
+update public.products set category = 'Accessories' where category = 'Makeup';
+update public.products set category = 'Fragrances' where category = 'Arabic Perfumes';
+update public.products set category = 'Face Care' where category = 'Korean Skincare';
+update public.products set category = 'Apparel and footwear' where category = 'Footwear and Clothes';
 
 alter table public.products
   add constraint products_category_check
@@ -13,10 +32,8 @@ alter table public.products
     'Body Care',
     'Hair Care',
     'Men''s Grooming',
-    'Makeup',
+    'Apparel and footwear',
     'Fragrances',
-    'Arabic Perfumes',
-    'Korean Skincare',
     'Accessories',
     'Baby Care'
   ));

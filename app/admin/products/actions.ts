@@ -21,7 +21,8 @@ async function requireProductAdmin() {
     throw new Error("Authentication required.");
   }
 
-  const { data: profile, error } = await authClient
+  const admin = createAdminClient();
+  const { data: profile, error } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
@@ -31,7 +32,7 @@ async function requireProductAdmin() {
     throw new Error("Administrator access required.");
   }
 
-  return createAdminClient();
+  return admin;
 }
 
 export async function saveProduct(formData: FormData) {
@@ -51,46 +52,61 @@ export async function saveProduct(formData: FormData) {
     throw new Error("Enter a valid original price.");
   }
 
+  const description = String(formData.get("description") || "").trim();
+  const image = String(formData.get("image") || "").trim();
   const payload = {
     name,
     slug: slugify(name),
-    description: String(formData.get("description") || ""),
+    description,
+    short_description: description || name,
     category: String(formData.get("category") || "Face Care"),
     price,
-    originalPrice,
+    original_price: originalPrice,
     stock,
-    badge: String(formData.get("badge") || "").trim() || null,
-    image: String(formData.get("image") || "").trim() || null,
-    hidden: formData.get("hidden") !== "on",
+    tag: String(formData.get("badge") || "").trim(),
+    benefits: [],
+    image: image || "🧴",
+    featured: false,
+    hidden: formData.get("visible") !== "on",
   };
 
   const result = id
-    ? await admin.from("products").update(payload).eq("id", id)
-    : await admin.from("products").insert(payload);
+    ? await admin.from("products").update(payload).eq("id", id).select("id").maybeSingle()
+    : await admin.from("products").insert(payload).select("id").single();
 
   if (result.error) {
     throw result.error;
+  }
+  if (!result.data) {
+    throw new Error("Product was not found and could not be updated.");
   }
 
   revalidatePath("/");
   revalidatePath("/shop");
   revalidatePath("/deals");
+  revalidatePath("/admin");
   revalidatePath("/admin/products");
 }
 
 export async function deleteProduct(formData: FormData) {
   const admin = await requireProductAdmin();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("products")
     .delete()
-    .eq("id", String(formData.get("id")));
+    .eq("id", String(formData.get("id")))
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw error;
+  }
+  if (!data) {
+    throw new Error("Product was not found and could not be deleted.");
   }
 
   revalidatePath("/");
   revalidatePath("/shop");
   revalidatePath("/deals");
+  revalidatePath("/admin");
   revalidatePath("/admin/products");
 }

@@ -1,18 +1,20 @@
 import type { Payment, Product, Order, StoreSettings } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
+import { mapSupabaseProduct } from "@/app/lib/supabase/product-mapper";
 
 export async function fetchProductsFromSupabase() {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) {
-    return [] as Product[];
+    return null;
   }
 
   const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
   if (error || !data) {
-    return [] as Product[];
+    console.error("PRODUCT LOAD ERROR:", error ?? "Supabase returned no product data.");
+    return null;
   }
 
-  return data as Product[];
+  return data.map((row) => mapSupabaseProduct(row));
 }
 
 export async function fetchOrdersFromSupabase() {
@@ -99,23 +101,29 @@ export async function fetchSettingsFromSupabase() {
 }
 
 export async function upsertProductToSupabase(product: Product) {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) {
-    return false;
+  const response = await fetch("/api/admin/products", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ product }),
+  });
+  if (!response.ok) {
+    const result = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(result?.error ?? `Product save failed (${response.status}).`);
   }
-
-  const { error } = await supabase.from("products").upsert(product, { onConflict: "id" });
-  return !error;
+  return true;
 }
 
 export async function deleteProductFromSupabase(id: string) {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) {
-    return false;
+  const response = await fetch("/api/admin/products", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) {
+    const result = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(result?.error ?? `Product delete failed (${response.status}).`);
   }
-
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  return !error;
+  return true;
 }
 
 export async function upsertOrderToSupabase(order: Order) {
