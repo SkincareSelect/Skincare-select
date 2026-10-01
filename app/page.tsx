@@ -186,19 +186,17 @@ export default async function HomePage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[2rem] border border-[#eadfce] bg-white p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Customer reviews</p>
-          <div className="mt-5 space-y-4">
-            {[
-              ["A very polished store and the products arrived quickly.", "M. Phiri"],
-              ["I love how simple the checkout is on mobile.", "N. Banda"],
-              ["The selection feels premium and trustworthy.", "K. Mulenga"],
-            ].map(([quote, name]) => (
-              <div key={name} className="rounded-[1.5rem] bg-[#fbf7f2] p-4">
-                <p className="text-sm leading-6 text-slate-700">“{quote}”</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{name}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Verified customer reviews</p>
+          <h2 className="mt-2 text-3xl font-semibold text-slate-900">Reviews from real orders</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Customers with a paid or delivered order can share a review on that product&apos;s page. Reviews are marked as verified purchases.
+          </p>
+          <Link
+            href="/shop"
+            className="mt-6 inline-flex rounded-full border border-[#eadfce] bg-[#fbf7f2] px-5 py-3 text-sm font-semibold text-[#2f241f] transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]"
+          >
+            Browse products
+          </Link>
         </div>
 
         <div className="rounded-[2rem] border border-[#eadfce] bg-white p-8 shadow-sm">

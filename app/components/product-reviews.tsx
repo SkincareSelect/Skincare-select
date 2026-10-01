@@ -93,7 +93,7 @@ export function ProductReviews({ productId }: { productId: string }) {
         return;
       }
 
-      setFeedback({ ok: true, message: "Thank you! Your review has been posted." });
+      setFeedback({ ok: true, message: "Thank you! Your verified-purchase review has been posted." });
       setRating(0);
       setTitle("");
       setComment("");
@@ -156,6 +156,7 @@ export function ProductReviews({ productId }: { productId: string }) {
         {user ? (
           <div className="space-y-4">
             <p className="font-semibold text-slate-900">Write a review</p>
+            <p className="text-sm text-slate-500">Reviews are available to signed-in customers with a paid or delivered order for this product.</p>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((position) => (
                 <button
@@ -183,6 +184,7 @@ export function ProductReviews({ productId }: { productId: string }) {
               className="w-full rounded-[1.25rem] border border-[#eadfce] px-4 py-3 text-sm focus:border-[#d8c1b1] focus:outline-none"
               rows={3}
               maxLength={2000}
+              required
             />
             {feedback ? (
               <p className={`text-sm ${feedback.ok ? "text-emerald-600" : "text-red-600"}`}>{feedback.message}</p>
@@ -200,7 +202,7 @@ export function ProductReviews({ productId }: { productId: string }) {
             <a href="/login" className="font-semibold text-[#8d6e63]">
               Sign in
             </a>{" "}
-            to write a review.
+            to write a verified-purchase review after your order is paid or delivered.
           </p>
         )}
       </div>

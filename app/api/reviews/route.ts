@@ -48,18 +48,36 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  let body: {
+    product_id?: string;
+    rating?: number;
+    title?: string;
+    comment?: string;
+  };
   try {
-    const body = (await request.json()) as {
-      product_id?: string;
-      rating?: number;
-      title?: string;
-      comment?: string;
-    };
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ error: "Review request must contain valid JSON." }, { status: 400 });
+  }
 
-    if (!body.product_id || typeof body.rating !== "number" || body.rating < 1 || body.rating > 5) {
-      return NextResponse.json({ error: "A product_id and rating between 1 and 5 are required." }, { status: 400 });
-    }
+  if (
+    typeof body.product_id !== "string" ||
+    !body.product_id.trim() ||
+    typeof body.rating !== "number" ||
+    !Number.isInteger(body.rating) ||
+    body.rating < 1 ||
+    body.rating > 5
+  ) {
+    return NextResponse.json({ error: "A product_id and rating between 1 and 5 are required." }, { status: 400 });
+  }
 
+  const title = typeof body.title === "string" ? body.title.trim().slice(0, 120) : "";
+  const comment = typeof body.comment === "string" ? body.comment.trim().slice(0, 2000) : "";
+  if (!comment) {
+    return NextResponse.json({ error: "Please add a comment about your experience." }, { status: 400 });
+  }
+
+  try {
     const supabase = await createClient();
     const {
       data: { user },
@@ -71,19 +89,54 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    // Verified purchase check: has this customer ever ordered this product?
-    const { data: orders } = await admin
+    const ordersByUser = await admin
       .from("orders")
-      .select("items, email")
-      .eq("email", user.email ?? "");
+      .select("id, customer_name, status")
+      .eq("user_id", user.id);
+    if (ordersByUser.error) {
+      console.error("REVIEW PURCHASE CHECK ERROR:", ordersByUser.error);
+      return NextResponse.json({ error: "Unable to verify your purchase right now. Please try again." }, { status: 500 });
+    }
 
-    const verifiedPurchase = (orders ?? []).some((order) => {
-      const items = Array.isArray(order.items) ? order.items : [];
-      return items.some((item: { product?: { id?: string } }) => item?.product?.id === body.product_id);
-    });
+    const ordersByEmail = user.email
+      ? await admin
+          .from("orders")
+          .select("id, customer_name, status")
+          .ilike("email", user.email)
+      : { data: [], error: null };
+    if (ordersByEmail.error) {
+      console.error("REVIEW PURCHASE CHECK ERROR:", ordersByEmail.error);
+      return NextResponse.json({ error: "Unable to verify your purchase right now. Please try again." }, { status: 500 });
+    }
 
-    const customerName =
-      user.user_metadata?.full_name || user.email?.split("@")[0] || "Verified customer";
+    const orders = [...(ordersByUser.data ?? []), ...(ordersByEmail.data ?? [])];
+    const paidOrders = Array.from(
+      new Map(
+        orders
+          .filter((order) => ["paid", "delivered"].includes(String(order.status).toLowerCase()))
+          .map((order) => [order.id, order]),
+      ).values(),
+    );
+    if (paidOrders.length === 0) {
+      return NextResponse.json({ error: "Only customers with a paid or delivered order can review this product." }, { status: 403 });
+    }
+
+    const { data: purchasedItems, error: itemsError } = await admin
+      .from("order_items")
+      .select("order_id")
+      .in("order_id", paidOrders.map((order) => order.id))
+      .eq("product_id", body.product_id);
+    if (itemsError) {
+      console.error("REVIEW PURCHASE CHECK ERROR:", itemsError);
+      return NextResponse.json({ error: "Unable to verify your purchase right now. Please try again." }, { status: 500 });
+    }
+    if (!purchasedItems?.length) {
+      return NextResponse.json({ error: "You can review a product after it appears in one of your paid or delivered orders." }, { status: 403 });
+    }
+
+    const purchasedOrderIds = new Set(purchasedItems.map((item) => item.order_id));
+    const matchingOrder = paidOrders.find((order) => purchasedOrderIds.has(order.id));
+    const customerName = matchingOrder?.customer_name || user.email?.split("@")[0] || "Customer";
 
     const { data, error } = await admin
       .from("product_reviews")
@@ -93,10 +146,10 @@ export async function POST(request: Request) {
           user_id: user.id,
           customer_name: customerName,
           customer_email: user.email,
-          rating: Math.round(body.rating),
-          title: body.title?.slice(0, 120) ?? null,
-          comment: body.comment?.slice(0, 2000) ?? null,
-          verified_purchase: verifiedPurchase,
+          rating: body.rating,
+          title: title || null,
+          comment,
+          verified_purchase: true,
           status: "approved",
           updated_at: new Date().toISOString(),
         },
@@ -110,7 +163,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true, id: data.id });
-  } catch {
-    return NextResponse.json({ error: "Invalid review request." }, { status: 400 });
+  } catch (error) {
+    console.error("REVIEW SUBMIT ERROR:", error);
+    return NextResponse.json({ error: "Unable to submit your review right now. Please try again." }, { status: 500 });
   }
 }
