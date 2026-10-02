@@ -99,7 +99,7 @@ export default function ShopPage() {
   }, []);
 
   useEffect(() => {
-    if (window.location.hash === "#products") {
+    if (window.location.hash === "#products" || category !== "All") {
       scrollToProducts();
     }
   }, [category, products.length]);
@@ -117,9 +117,7 @@ export default function ShopPage() {
     }
     url.hash = "products";
     window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
-    if (nextCategory === category) {
-      scrollToProducts();
-    }
+    scrollToProducts();
   };
 
   const toggleFilter = (filter: string) => {
