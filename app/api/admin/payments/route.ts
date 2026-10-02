@@ -17,7 +17,14 @@ export async function PATCH(request: Request) {
   const { data: payment, error } = await admin.from("payments").update({ status: body.status, updated_at: new Date().toISOString() }).eq("id", body.payment_id).select("order_id").single();
   if (error) return NextResponse.json({ error: "Payment could not be updated." }, { status: 500 });
   if (body.status === "paid") {
-    await admin.from("orders").update({ status: "Paid" }).eq("id", payment.order_id);
+    const { error: orderError } = await admin
+      .from("orders")
+      .update({ status: "Payment Confirmed" })
+      .eq("id", payment.order_id);
+    if (orderError) {
+      console.error("PAYMENT ORDER STATUS UPDATE ERROR:", orderError);
+      return NextResponse.json({ error: "Payment was updated, but its order status could not be synchronized." }, { status: 500 });
+    }
   }
   return NextResponse.json({ ok: true });
 }

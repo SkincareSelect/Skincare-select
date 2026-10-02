@@ -2,6 +2,7 @@ import { deleteProduct, saveProduct } from "./actions";
 import ProductImageUpload from "@/components/ProductImageUpload";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 import SendDealsButton from "./send-deals-button";
+import { categories } from "@/app/lib/store-data";
 
 type AdminProduct = {
   id: string;
@@ -135,14 +136,11 @@ function ProductForm({ product }: { product?: AdminProduct }) {
             name="category"
             defaultValue={product?.category || "Face Care"}
           >
-            <option>Face Care</option>
-            <option>Body Care</option>
-            <option>Hair Care</option>
-            <option>Men&apos;s Grooming</option>
-            <option>Apparel and footwear</option>
-            <option>Fragrances</option>
-            <option>Accessories</option>
-            <option>Baby Care</option>
+            {categories.map((category) => (
+              <option key={category.label} value={category.label}>
+                {category.label}
+              </option>
+            ))}
           </select>
         </label>
 

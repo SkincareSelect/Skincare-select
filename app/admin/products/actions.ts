@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { categories } from "@/app/lib/store-data";
 
 function slugify(value: string) {
   return value
@@ -43,9 +44,17 @@ export async function saveProduct(formData: FormData) {
   const stock = Number(formData.get("stock"));
   const originalPriceValue = String(formData.get("originalPrice") || "").trim();
   const originalPrice = originalPriceValue ? Number(originalPriceValue) : null;
+  const category = String(formData.get("category") || "");
 
-  if (!name || !Number.isFinite(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
-    throw new Error("Enter a valid product name, price, and stock quantity.");
+  if (
+    !name ||
+    !Number.isFinite(price) ||
+    price < 0 ||
+    !Number.isInteger(stock) ||
+    stock < 0 ||
+    !categories.some((item) => item.label === category)
+  ) {
+    throw new Error("Enter a valid product name, category, price, and stock quantity.");
   }
 
   if (originalPrice !== null && (!Number.isFinite(originalPrice) || originalPrice < 0)) {
@@ -59,7 +68,7 @@ export async function saveProduct(formData: FormData) {
     slug: slugify(name),
     description,
     shortDescription: description || name,
-    category: String(formData.get("category") || "Face Care"),
+    category,
     price,
     originalPrice,
     stock,

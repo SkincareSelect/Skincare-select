@@ -17,9 +17,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://zhurieandco.shop"),
   title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
   description:
     "Premium skincare, beauty, grooming, fragrance and personal-care products for women, men and families across Zambia.",
+  openGraph: {
+    type: "website",
+    siteName: "Zhurie & Co",
+    title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
+    description:
+      "Discover carefully selected skincare, beauty and personal-care products for every member of the family.",
+    url: "https://zhurieandco.shop/",
+    locale: "en_ZM",
+  },
+  twitter: {
+    card: "summary",
+    title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
+    description:
+      "Discover carefully selected skincare, beauty and personal-care products for every member of the family.",
+  },
 };
 
 export default function RootLayout({

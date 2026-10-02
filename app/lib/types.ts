@@ -5,6 +5,7 @@ export type ProductCategory =
   | "Men's Grooming"
   | "Apparel and footwear"
   | "Fragrances"
+  | "Makeup"
   | "Accessories"
   | "Baby Care";
 
@@ -66,6 +67,11 @@ export interface Product {
   hidden?: boolean;
   badge?: string;
   createdAt?: string;
+}
+
+export interface ProductCatalogueResult {
+  products: Product[];
+  error: string | null;
 }
 
 export interface CartItem {

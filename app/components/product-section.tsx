@@ -60,7 +60,6 @@ export function ProductSection({ products, title = "Featured products", subtitle
               <p className="mt-3 text-sm leading-6 text-slate-600">{product.shortDescription}</p>
               <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
                 <span>{product.category}</span>
-                <span>{product.rating ? `${product.rating.toFixed(1)} ★` : "New"}</span>
               </div>
               <div className="mt-5 flex items-end justify-between">
                 <div>

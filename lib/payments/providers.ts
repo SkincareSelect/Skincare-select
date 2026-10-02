@@ -46,7 +46,11 @@ class DpoProvider implements MobileMoneyProviderAdapter {
         message: "Payment provider integration is not configured. Complete the payment authorization on your phone, then wait for confirmation.",
       };
     }
-    const siteUrl = (process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+    const siteUrl = (
+      process.env.SITE_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "https://zhurieandco.shop"
+    ).replace(/\/$/, "");
     const result = await dpoCreateToken(config, {
       amount: input.amount,
       currency: "ZMW",

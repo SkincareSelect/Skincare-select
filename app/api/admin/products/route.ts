@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Product } from "@/app/lib/types";
+import { categories } from "@/app/lib/store-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -70,12 +71,13 @@ export async function POST(request: Request) {
       !product.name.trim() ||
       typeof product.slug !== "string" ||
       !product.slug.trim() ||
+      !categories.some((category) => category.label === product.category) ||
       !Number.isFinite(product.price) ||
       product.price < 0 ||
       !Number.isInteger(product.stock) ||
       product.stock < 0
     ) {
-      return NextResponse.json({ error: "Product details are invalid." }, { status: 400 });
+      return NextResponse.json({ error: "Product name, slug, category, price, or stock is invalid." }, { status: 400 });
     }
 
     const { data, error } = await authorization.admin

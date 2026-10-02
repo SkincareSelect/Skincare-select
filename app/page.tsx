@@ -1,6 +1,7 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { categories, initialProducts } from "@/app/lib/store-data";
+import { categories } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-server";
 import { fetchCampaignFromSupabase } from "@/app/lib/supabase/data-server";
 import { ProductSection } from "@/app/components/product-section";
@@ -9,10 +10,13 @@ import { ProductThumb } from "@/app/components/product-thumb";
 import { FeaturedCampaign } from "@/app/components/featured-campaign";
 import { SectionLink } from "@/app/components/section-link";
 
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
 export default async function HomePage() {
-  const products = await fetchProductsFromSupabase();
+  const { products: catalogue, error: catalogueError } = await fetchProductsFromSupabase();
   const campaign = await fetchCampaignFromSupabase();
-  const catalogue = products ?? initialProducts;
   const featuredProducts = catalogue.filter((product) => product.featured).slice(0, 6);
   const newArrivals = catalogue.filter((product) => product.newArrival).slice(0, 4);
   const bestSellers = catalogue.filter((product) => product.bestSeller).slice(0, 4);
@@ -56,6 +60,12 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {catalogueError ? (
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900" role="alert">
+          {catalogueError}
+        </p>
+      ) : null}
 
       <section className="scroll-mt-28 space-y-6" id="categories">
         <div>

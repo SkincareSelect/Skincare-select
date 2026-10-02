@@ -5,15 +5,11 @@ import { Building2, RadioTower } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { useAuth } from "@/app/components/auth-provider";
 import {
-  getOrders,
-  getPayments,
   getReferralReward,
   getSettings,
   normalizeReferralCode,
-  saveOrders,
-  savePayments,
 } from "@/app/lib/store-data";
-import type { Order, Payment, PaymentMethod } from "@/app/lib/types";
+import type { PaymentMethod } from "@/app/lib/types";
 
 type AvailablePaymentMethod = "Airtel Money" | "Zamtel Money";
 const paymentMethods: AvailablePaymentMethod[] = ["Airtel Money", "Zamtel Money"];
@@ -38,10 +34,16 @@ function getPaymentInstructions(method: PaymentMethod, settings: ReturnType<type
   return details[method];
 }
 
-function buildOrderNumber(existingCount: number) {
-  const sequence = String(existingCount + 1).padStart(6, "0");
-  return `ZC-2026-${sequence}`;
-}
+type OrderConfirmation = {
+  orderNumber: string;
+  paymentMethod: AvailablePaymentMethod;
+  paymentReference: string;
+  items: Array<{ product_id: string; product_name: string; quantity: number; price: number }>;
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  total: number;
+};
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
@@ -53,12 +55,12 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
-  const [notes, setNotes] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<AvailablePaymentMethod | null>(null);
   const [paymentReference, setPaymentReference] = useState("");
-  const [status, setStatus] = useState("Ready to place order");
+  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
 
   const normalizedReferralCode = normalizeReferralCode(referralCode);
   const referralReward = getReferralReward(normalizedReferralCode);
@@ -91,85 +93,109 @@ export default function CheckoutPage() {
 
     setLoading(true);
 
-    const orderNumber = buildOrderNumber(getOrders().length);
-    const createdAt = new Date().toISOString();
-    const order: Order = {
-      id: `order-${orderNumber}`,
-      orderNumber,
-      customerName: name,
-      customerEmail: email,
-      customerPhone: phone,
-      items,
-      subtotal,
-      deliveryFee,
-      discount: discountAmount,
-      total,
-      status: "Payment Pending" as const,
-      paymentMethod,
-      paymentStatus: "pending" as const,
-      shippingAddress: address,
-      area,
-      city,
-      referralCode: normalizedReferralCode || undefined,
-      notes: notes || undefined,
-      createdAt,
-    };
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: name,
+          customer_email: email,
+          customer_phone: phone,
+          province: area || city,
+          city,
+          address,
+          delivery_method: "Standard delivery",
+          delivery_fee: deliveryFee,
+          payment_method: paymentMethod,
+          payment_reference: paymentReference.trim(),
+          subtotal,
+          total,
+          referral_code: normalizedReferralCode || null,
+          items: items.map((item) => ({
+            product_id: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+          })),
+        }),
+      });
 
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customer_name: name,
-        customer_email: email,
-        customer_phone: phone,
-        province: area || city,
-        city,
-        address,
-        delivery_method: "Standard delivery",
-        delivery_fee: deliveryFee,
-        payment_method: paymentMethod,
-        payment_reference: paymentReference.trim(),
-        subtotal,
-        total,
-        referral_code: normalizedReferralCode || null,
-        notes: notes || null,
-        items: items.map((item) => ({
-          product_id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-        })),
-      }),
-    });
+      if (!response.ok) {
+        const result = (await response.json().catch(() => null)) as { error?: string } | null;
+        setStatus(result?.error ?? "We could not save your order. Please try again.");
+        return;
+      }
 
-    if (!response.ok) {
-      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      const result = await response.json() as {
+        order_number: string;
+        payment_reference: string;
+        items: OrderConfirmation["items"];
+        subtotal: number;
+        delivery_fee: number;
+        discount: number;
+        total: number;
+      };
+
+      setConfirmation({
+        orderNumber: result.order_number,
+        paymentMethod,
+        paymentReference: result.payment_reference,
+        items: result.items,
+        subtotal: result.subtotal,
+        deliveryFee: result.delivery_fee,
+        discount: result.discount,
+        total: result.total,
+      });
+      clearCart();
+    } catch (error) {
+      console.error("CHECKOUT SUBMISSION ERROR:", error);
+      setStatus("We could not reach the order service. Your cart is still saved; please try again.");
+    } finally {
       setLoading(false);
-      setStatus(result?.error ?? "We could not save your order. Please try again.");
-      return;
     }
-
-    const result = await response.json() as { order_id?: string; payment_id?: string; payment_reference?: string; order_number?: string };
-    const payment: Payment = {
-      id: `payment-${orderNumber}`,
-      orderId: order.id,
-      paymentMethod,
-      reference: paymentReference.trim(),
-      amount: total,
-      status: "pending",
-      createdAt,
-      updatedAt: createdAt,
-    };
-    const nextOrders = [order, ...getOrders()];
-    saveOrders(nextOrders);
-
-    const nextPayments = [payment, ...getPayments()];
-    savePayments(nextPayments);
-
-    clearCart();
-    setLoading(false);
-    setStatus(`Payment reference submitted for verification. Order ${result.order_number ?? orderNumber}.`);
   };
+
+  if (confirmation) {
+    return (
+      <section className="mx-auto max-w-3xl space-y-6 rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-10">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Order received</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900">Thank you for your order!</h1>
+          <p className="mt-3 text-slate-600">
+            Your payment reference has been submitted for verification. This does not mean payment has been received or verified.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-[#fbf7f2] p-5 text-sm text-slate-700">
+          <p><span className="font-semibold">Order number:</span> {confirmation.orderNumber}</p>
+          <p className="mt-2"><span className="font-semibold">Payment method:</span> {confirmation.paymentMethod}</p>
+          <p className="mt-2"><span className="font-semibold">Reference:</span> {confirmation.paymentReference}</p>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
+          {confirmation.items.map((item) => (
+            <div key={item.product_id} className="flex items-center justify-between gap-4 rounded-2xl border border-[#eadfce] px-4 py-3 text-sm">
+              <span>{item.product_name} × {item.quantity}</span>
+              <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
+            </div>
+          ))}
+          <div className="space-y-2 border-t border-[#eadfce] pt-4 text-sm text-slate-600">
+            <p className="flex justify-between"><span>Subtotal</span><span>{formatPrice(confirmation.subtotal)}</span></p>
+            <p className="flex justify-between"><span>Delivery</span><span>{formatPrice(confirmation.deliveryFee)}</span></p>
+            {confirmation.discount > 0 ? (
+              <p className="flex justify-between"><span>Referral discount</span><span>-{formatPrice(confirmation.discount)}</span></p>
+            ) : null}
+            <p className="flex justify-between text-lg font-semibold text-slate-900"><span>Total</span><span>{formatPrice(confirmation.total)}</span></p>
+          </div>
+        </div>
+
+        <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          We will contact you using the details provided about delivery and payment verification. Look out for rewards and discounts from Zhurie &amp; Co.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
@@ -258,15 +284,10 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <div className="mt-4">
-          <label className="mb-2 block text-sm font-medium text-slate-700">Additional instructions</label>
-          <textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-24 w-full rounded-2xl border border-[#eadfce] px-4 py-3" />
-        </div>
-
         <button type="submit" disabled={loading || !paymentMethod} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
           {loading ? "Submitting payment..." : "Submit payment"}
         </button>
-        <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${status.startsWith("Payment reference submitted") ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`} role="status">{status}</p>
+        {status ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{status}</p> : null}
       </form>
 
       <aside className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">

@@ -20,21 +20,34 @@ export async function GET(request: Request) {
   try {
     const verified = await dpoVerifyToken(config, transactionToken);
     const supabase = createAdminClient();
-    const { data: payment } = await supabase
+    const { data: payment, error: paymentError } = await supabase
       .from("payments")
       .select("id,order_id,amount")
       .eq("provider_transaction_id", transactionToken)
       .maybeSingle();
+    if (paymentError) throw paymentError;
 
     if (payment && verified.paid) {
-      const amountMatches = verified.amount === undefined || Math.abs(verified.amount - Number(payment.amount)) < 0.01;
+      const amountMatches =
+        verified.currency === "ZMW" &&
+        verified.amount !== undefined &&
+        Math.abs(verified.amount - Number(payment.amount)) < 0.01;
       if (amountMatches) {
-        await supabase.from("payments").update({ status: "paid", updated_at: new Date().toISOString() }).eq("id", payment.id);
-        await supabase.from("orders").update({ status: "Paid" }).eq("id", payment.order_id);
+        const { error: paymentUpdateError } = await supabase
+          .from("payments")
+          .update({ status: "paid", updated_at: new Date().toISOString() })
+          .eq("id", payment.id);
+        if (paymentUpdateError) throw paymentUpdateError;
+
+        const { error: orderUpdateError } = await supabase
+          .from("orders")
+          .update({ status: "Payment Confirmed" })
+          .eq("id", payment.order_id);
+        if (orderUpdateError) throw orderUpdateError;
         return NextResponse.redirect(`${siteUrl}/account?payment=paid`);
       }
     }
-    return NextResponse.redirect(`${siteUrl}/account?payment=${verified.paid ? "paid" : "pending"}`);
+    return NextResponse.redirect(`${siteUrl}/account?payment=pending`);
   } catch (error) {
     console.error("DPO return verification error:", error);
     return NextResponse.redirect(`${siteUrl}/account?payment=pending`);

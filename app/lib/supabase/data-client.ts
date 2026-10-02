@@ -1,20 +1,26 @@
-import type { Payment, Product, Order, StoreSettings } from "@/app/lib/types";
+import type { Payment, Product, ProductCatalogueResult, Order, StoreSettings } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 import { mapSupabaseProduct } from "@/app/lib/supabase/product-mapper";
 
-export async function fetchProductsFromSupabase() {
+export async function fetchProductsFromSupabase(): Promise<ProductCatalogueResult> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) {
-    return null;
+    console.error("PRODUCT LOAD ERROR: Supabase browser configuration is missing.");
+    return { products: [], error: "The product catalogue is temporarily unavailable. Please try again later." };
   }
 
   const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-  if (error || !data) {
-    console.error("PRODUCT LOAD ERROR:", error ?? "Supabase returned no product data.");
-    return null;
+  if (error) {
+    console.error("PRODUCT LOAD ERROR:", error);
+    return { products: [], error: "The product catalogue is temporarily unavailable. Please try again later." };
   }
 
-  return data.map((row) => mapSupabaseProduct(row));
+  if (!data) {
+    console.error("PRODUCT LOAD ERROR: Supabase returned no product data.");
+    return { products: [], error: "The product catalogue is temporarily unavailable. Please try again later." };
+  }
+
+  return { products: data.map((row) => mapSupabaseProduct(row)), error: null };
 }
 
 export async function fetchOrdersFromSupabase() {

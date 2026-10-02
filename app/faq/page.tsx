@@ -1,7 +1,7 @@
 export default function FaqPage() {
   const faqs = [
     ["How do I place an order?", "Browse the shop, add items to cart and complete checkout as a guest or signed-in customer."],
-    ["Which payment methods are supported?", "MTN Mobile Money, Airtel Money, Zamtel Money and bank transfer are supported."],
+    ["Which payment methods are supported?", "Airtel Money and Zamtel Money are currently available at checkout. Select a method to see its payment instructions."],
     ["Do you deliver across Zambia?", "Yes. We offer Lusaka and countrywide deliveries. Delivery fees apply and vary by destination."],
   ];
 

@@ -26,13 +26,28 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (payment && verified.paid) {
-      // Confirm the paid amount matches what we expect before marking it paid.
-      const amountMatches = verified.amount === undefined || Math.abs(verified.amount - Number(payment.amount)) < 0.01;
+      const amountMatches =
+        verified.currency === "ZMW" &&
+        verified.amount !== undefined &&
+        Math.abs(verified.amount - Number(payment.amount)) < 0.01;
       if (amountMatches) {
-        await supabase.from("payments").update({ status: "paid", updated_at: new Date().toISOString() }).eq("id", payment.id);
-        await supabase.from("orders").update({ status: "Paid" }).eq("id", payment.order_id);
+        const { error: paymentUpdateError } = await supabase
+          .from("payments")
+          .update({ status: "paid", updated_at: new Date().toISOString() })
+          .eq("id", payment.id);
+        if (paymentUpdateError) throw paymentUpdateError;
+
+        const { error: orderUpdateError } = await supabase
+          .from("orders")
+          .update({ status: "Payment Confirmed" })
+          .eq("id", payment.order_id);
+        if (orderUpdateError) throw orderUpdateError;
       } else {
-        console.error("DPO webhook amount mismatch", { expected: payment.amount, received: verified.amount });
+        console.error("DPO webhook payment mismatch", {
+          expectedAmount: payment.amount,
+          receivedAmount: verified.amount,
+          receivedCurrency: verified.currency,
+        });
       }
     } else if (payment && !verified.paid) {
       const status = verified.result === "904" ? "cancelled" : verified.result === "901" ? "failed" : "pending";

@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     const paidOrders = Array.from(
       new Map(
         orders
-          .filter((order) => ["paid", "delivered"].includes(String(order.status).toLowerCase()))
+          .filter((order) => ["paid", "payment confirmed", "delivered"].includes(String(order.status).toLowerCase()))
           .map((order) => [order.id, order]),
       ).values(),
     );

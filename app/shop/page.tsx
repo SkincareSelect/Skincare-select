@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
-import { categories, initialProducts } from "@/app/lib/store-data";
+import { categories } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
 import type { Product, ProductCategory } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
@@ -73,6 +73,7 @@ const koreanSkinTypeFilters = ["All Skin Types", "Oily", "Dry", "Combination", "
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [catalogueError, setCatalogueError] = useState<string | null>(null);
   const [category, setCategory] = useState<ProductCategory | "All">("All");
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -80,7 +81,12 @@ export default function ShopPage() {
 
   useEffect(() => {
     void fetchProductsFromSupabase().then((nextProducts) => {
-      setProducts(nextProducts ?? initialProducts);
+      setProducts(nextProducts.products);
+      setCatalogueError(nextProducts.error);
+    }).catch((error: unknown) => {
+      console.error("SHOP PRODUCT LOAD ERROR:", error);
+      setProducts([]);
+      setCatalogueError("The product catalogue is temporarily unavailable. Please try again later.");
     });
   }, []);
 
@@ -292,7 +298,6 @@ export default function ShopPage() {
                 ))}
               </div>
               <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-                <span>{product.rating ? `${product.rating.toFixed(1)} ★` : "New"}</span>
                 <span>{product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}</span>
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -319,8 +324,8 @@ export default function ShopPage() {
             </article>
           ))
         ) : (
-          <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm">
-            No products match your search. Try another keyword or category.
+          <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm" role={catalogueError ? "alert" : undefined}>
+            {catalogueError ?? "No products match your search. Try another keyword or category."}
           </div>
         )}
       </div>

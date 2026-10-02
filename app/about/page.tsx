@@ -15,7 +15,7 @@ export default function AboutPage() {
         <section className="rounded-3xl bg-[#faf6f0] p-6">
           <h2 className="font-serif text-2xl font-semibold text-slate-900">What you can find here</h2>
           <p className="mt-3 text-slate-600">
-            Explore Face Care, Body Care, Hair Care, Men&apos;s Grooming, Fragrances, Accessories, Baby Care, and our
+            Explore Face Care, Body Care, Hair Care, Men&apos;s Grooming, Makeup, Fragrances, Accessories, Baby Care, and our
             Apparel and footwear collection. Accessories include Lip, Eye and Base products alongside beauty tools and
             organizers.
           </p>

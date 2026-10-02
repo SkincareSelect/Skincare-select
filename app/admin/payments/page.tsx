@@ -13,10 +13,13 @@ export type AdminPayment = {
 
 export default async function PaymentsPage() {
   const supabase = await requireAdmin(["admin", "orders_admin"]);
-  const { data = [] } = await supabase
+  const { data, error } = await supabase
     .from("payments")
     .select("id, order_id, payment_method, reference, amount, status, created_at")
     .order("created_at", { ascending: false });
+  if (error && error.code !== "PGRST205") {
+    console.error("ADMIN PAYMENTS LOAD ERROR:", error);
+  }
 
   return (
     <>
@@ -26,7 +29,15 @@ export default async function PaymentsPage() {
           <h1>Payments</h1>
         </div>
       </div>
-      <PaymentsList payments={data as AdminPayment[]} />
+      {error ? (
+        <p className="panel" role="alert">
+          {error.code === "PGRST205"
+            ? "Payment records are not set up yet. Run supabase/add-payments-table.sql in the Supabase SQL editor."
+            : "Payment records could not be loaded. Please try again later."}
+        </p>
+      ) : (
+        <PaymentsList payments={(data ?? []) as AdminPayment[]} />
+      )}
     </>
   );
 }

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/app/components/cart-provider";
-import { initialProducts } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
@@ -14,13 +13,21 @@ function formatPrice(value: number) {
 
 export default function DealsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [catalogueError, setCatalogueError] = useState<string | null>(null);
   const { addItem } = useCart();
 
   useEffect(() => {
     let cancelled = false;
-    void fetchProductsFromSupabase().then((nextProducts) => {
+    void fetchProductsFromSupabase().then((result) => {
       if (cancelled) return;
-      setProducts(nextProducts ?? initialProducts);
+      setProducts(result.products);
+      setCatalogueError(result.error);
+    }).catch((error: unknown) => {
+      console.error("DEALS PRODUCT LOAD ERROR:", error);
+      if (!cancelled) {
+        setProducts([]);
+        setCatalogueError("The product catalogue is temporarily unavailable. Please try again later.");
+      }
     });
     return () => {
       cancelled = true;
@@ -52,12 +59,12 @@ export default function DealsPage() {
       </div>
 
       {deals.length === 0 ? (
-        <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm">
-          No discounts are running right now — check back soon, or{" "}
+        <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm" role={catalogueError ? "alert" : undefined}>
+          {catalogueError ?? <>No discounts are running right now — check back soon, or{" "}
           <Link href="/shop" className="font-semibold text-[#8d6e63]">
             browse the full catalogue
           </Link>
-          .
+          .</>}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

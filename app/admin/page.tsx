@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/components/auth-provider";
-import { getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
+import { categories, getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
 import { uploadCampaignImage, uploadProductImage } from "@/app/lib/supabase/client";
 import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
 import type { Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
@@ -280,11 +280,12 @@ export default function AdminPage() {
           fetchSettingsFromSupabase(),
         ]);
 
-        if (remoteProducts) {
-          setProducts(remoteProducts);
-          saveProducts(remoteProducts);
+        if (!remoteProducts.error) {
+          setProducts(remoteProducts.products);
+          saveProducts(remoteProducts.products);
         } else {
-          setFeedback("Products could not be loaded from Supabase. Check the browser console for details.");
+          setProducts([]);
+          setFeedback(remoteProducts.error);
         }
         if (remoteOrders.length > 0) {
           setOrders(remoteOrders);
@@ -674,9 +675,9 @@ export default function AdminPage() {
               <input placeholder="Price" type="number" value={draftProduct.price ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, price: Number(event.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <input placeholder="Stock" type="number" value={draftProduct.stock ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, stock: Number(event.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <select value={draftProduct.category ?? "Face Care"} onChange={(event) => setDraftProduct((current) => ({ ...current, category: event.target.value as Product["category"] }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3">
-                {["Face Care", "Body Care", "Hair Care", "Men's Grooming", "Apparel and footwear", "Fragrances", "Accessories", "Baby Care"].map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                {categories.map((category) => (
+                  <option key={category.label} value={category.label}>
+                    {category.label}
                   </option>
                 ))}
               </select>
