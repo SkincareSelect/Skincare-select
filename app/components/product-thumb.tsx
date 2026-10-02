@@ -28,7 +28,7 @@ export function ProductThumb({
           alt={product.name}
           fill
           sizes={sizes}
-          className="object-contain"
+          className="object-cover"
           unoptimized
         />
       </div>
