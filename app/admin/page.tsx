@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/components/auth-provider";
+import { DeliveryLocationPreview } from "@/app/components/delivery-location-preview";
 import { categories, getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
 import { uploadCampaignImage, uploadProductImage } from "@/app/lib/supabase/client";
 import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
@@ -916,9 +917,7 @@ export default function AdminPage() {
                     </div>
 
                     {order.shippingAddress ? (
-                      <p className="mt-3 text-sm text-slate-600">
-                        <span className="font-medium text-slate-700">Delivery:</span> {order.shippingAddress}
-                      </p>
+                      <DeliveryLocationPreview address={order.shippingAddress} city={order.city} />
                     ) : null}
 
                     {order.referralCode ? (
