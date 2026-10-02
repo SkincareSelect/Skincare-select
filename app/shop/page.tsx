@@ -44,15 +44,13 @@ function normalizeCategory(value: string | null): ProductCategory | "All" {
 }
 
 function scrollToProducts() {
-  window.setTimeout(() => {
-    const products = document.getElementById("products");
-    if (!products) {
-      return;
-    }
+  const products = document.getElementById("products");
+  if (!products) {
+    return;
+  }
 
-    const top = Math.max(0, products.getBoundingClientRect().top + window.scrollY - 112);
-    window.scrollTo({ top, behavior: "smooth" });
-  }, 100);
+  const top = Math.max(0, products.getBoundingClientRect().top + window.scrollY - 112);
+  window.scrollTo({ top, behavior: "instant" });
 }
 
 const koreanSkinConcernFilters = [
