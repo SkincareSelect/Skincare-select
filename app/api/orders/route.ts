@@ -19,6 +19,8 @@ type OrderRequest = {
   province?: string;
   city?: string;
   address?: string;
+  delivery_latitude?: number;
+  delivery_longitude?: number;
   landmark?: string;
   delivery_method?: string;
   delivery_fee?: number;
@@ -46,6 +48,8 @@ export async function POST(request: Request) {
   const phone = typeof phoneValue === "string" ? phoneValue.trim() : "";
   const email = typeof body.customer_email === "string" ? body.customer_email.trim() : "";
   const address = typeof body.address === "string" ? body.address.trim() : "";
+  const latitude = body.delivery_latitude;
+  const longitude = body.delivery_longitude;
   const paymentReference = typeof body.payment_reference === "string" ? body.payment_reference.trim() : "";
   if (
     !customerName ||
@@ -54,6 +58,14 @@ export async function POST(request: Request) {
     phone.length > 40 ||
     !address ||
     address.length > 500 ||
+    typeof latitude !== "number" ||
+    !Number.isFinite(latitude) ||
+    latitude < -18.1 ||
+    latitude > -8.2 ||
+    typeof longitude !== "number" ||
+    !Number.isFinite(longitude) ||
+    longitude < 21.9 ||
+    longitude > 33.7 ||
     (email !== "" && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) ||
     !paymentReference ||
     paymentReference.length > 120 ||
@@ -135,16 +147,20 @@ export async function POST(request: Request) {
     const discountRate = discounts[referralCode] || 0;
     const discount = subtotal * discountRate;
     const orderNumber = `ZC-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    const deliveryAddress = `${address}\nDelivery pin: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}\n${mapUrl}`;
     const { data: order, error } = await supabase.from("orders").insert({
       order_number: orderNumber, customer_name: customerName, phone,
       email: email || null, user_id: user?.id ?? null,
       province: typeof body.province === "string" ? body.province.trim().slice(0, 120) : "",
       city: typeof body.city === "string" ? body.city.trim().slice(0, 120) : "",
-      address,
+      address: deliveryAddress,
       landmark: typeof body.landmark === "string" ? body.landmark.trim().slice(0, 200) || null : null,
       delivery_method: typeof body.delivery_method === "string" ? body.delivery_method.trim().slice(0, 80) : "Standard delivery",
       delivery_fee: deliveryFee, payment_method: body.payment_method || "Airtel Money", subtotal,
       payment_reference: paymentReference,
+      delivery_latitude: latitude,
+      delivery_longitude: longitude,
       total: Math.max(0, subtotal + deliveryFee - discount), status: "Payment Pending"
     }).select("id,order_number").single();
     if (error) throw error;

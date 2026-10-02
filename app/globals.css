@@ -43,3 +43,19 @@ a {
 ::selection {
   background: rgba(141, 110, 99, 0.2);
 }
+
+.delivery-map-pin {
+  border: 0;
+  background: transparent;
+}
+
+.delivery-map-pin span {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: #8d2e24;
+  box-shadow: 0 2px 8px rgba(47, 36, 31, 0.4);
+  transform: rotate(-45deg);
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 
 import { AuthProvider } from "@/app/components/auth-provider";
 import { CartProvider } from "@/app/components/cart-provider";

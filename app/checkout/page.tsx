@@ -1,15 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Building2, RadioTower } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { useAuth } from "@/app/components/auth-provider";
+import type { DeliveryLocation } from "@/app/components/delivery-location-picker";
 import {
   getReferralReward,
   getSettings,
   normalizeReferralCode,
 } from "@/app/lib/store-data";
 import type { PaymentMethod } from "@/app/lib/types";
+
+const DeliveryLocationPicker = dynamic(
+  () => import("@/app/components/delivery-location-picker").then((module) => module.DeliveryLocationPicker),
+  {
+    ssr: false,
+    loading: () => <div className="mt-5 h-72 animate-pulse rounded-2xl bg-[#f7f2eb]" aria-label="Loading delivery map" />,
+  },
+);
 
 type AvailablePaymentMethod = "Airtel Money" | "Zamtel Money";
 const paymentMethods: AvailablePaymentMethod[] = ["Airtel Money", "Zamtel Money"];
@@ -38,6 +48,7 @@ type OrderConfirmation = {
   orderNumber: string;
   paymentMethod: AvailablePaymentMethod;
   paymentReference: string;
+  deliveryLocation: DeliveryLocation;
   items: Array<{ product_id: string; product_name: string; quantity: number; price: number }>;
   subtotal: number;
   deliveryFee: number;
@@ -55,6 +66,7 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState<DeliveryLocation | null>(null);
   const [referralCode, setReferralCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<AvailablePaymentMethod | null>(null);
   const [paymentReference, setPaymentReference] = useState("");
@@ -73,6 +85,11 @@ export default function CheckoutPage() {
 
     if (items.length === 0) {
       setStatus("Add an item to your cart before checkout.");
+      return;
+    }
+
+    if (!deliveryLocation) {
+      setStatus("Pin your exact delivery location on the map before submitting your order.");
       return;
     }
 
@@ -104,6 +121,8 @@ export default function CheckoutPage() {
           province: area || city,
           city,
           address,
+          delivery_latitude: deliveryLocation.latitude,
+          delivery_longitude: deliveryLocation.longitude,
           delivery_method: "Standard delivery",
           delivery_fee: deliveryFee,
           payment_method: paymentMethod,
@@ -129,6 +148,8 @@ export default function CheckoutPage() {
       const result = await response.json() as {
         order_number: string;
         payment_reference: string;
+        delivery_latitude: number;
+        delivery_longitude: number;
         items: OrderConfirmation["items"];
         subtotal: number;
         delivery_fee: number;
@@ -140,6 +161,10 @@ export default function CheckoutPage() {
         orderNumber: result.order_number,
         paymentMethod,
         paymentReference: result.payment_reference,
+        deliveryLocation: {
+          latitude: result.delivery_latitude,
+          longitude: result.delivery_longitude,
+        },
         items: result.items,
         subtotal: result.subtotal,
         deliveryFee: result.delivery_fee,
@@ -170,6 +195,17 @@ export default function CheckoutPage() {
           <p><span className="font-semibold">Order number:</span> {confirmation.orderNumber}</p>
           <p className="mt-2"><span className="font-semibold">Payment method:</span> {confirmation.paymentMethod}</p>
           <p className="mt-2"><span className="font-semibold">Reference:</span> {confirmation.paymentReference}</p>
+          <p className="mt-2">
+            <span className="font-semibold">Delivery pin:</span>{" "}
+            <a
+              href={`https://www.google.com/maps?q=${confirmation.deliveryLocation.latitude},${confirmation.deliveryLocation.longitude}`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Open selected location in Google Maps
+            </a>
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -233,6 +269,8 @@ export default function CheckoutPage() {
           <input value={area} onChange={(event) => setArea(event.target.value)} className="w-full rounded-2xl border border-[#eadfce] px-4 py-3" required />
         </div>
 
+        <DeliveryLocationPicker location={deliveryLocation} onChange={setDeliveryLocation} />
+
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-slate-700">Referral code</label>
           <input
@@ -284,7 +322,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <button type="submit" disabled={loading || !paymentMethod} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
+        <button type="submit" disabled={loading || !paymentMethod || !deliveryLocation} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
           {loading ? "Submitting payment..." : "Submit payment"}
         </button>
         {status ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{status}</p> : null}
