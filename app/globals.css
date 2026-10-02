@@ -40,6 +40,20 @@ a {
   text-decoration: none;
 }
 
+:where(button:not(:disabled), a[href], [role="button"], input[type="button"], input[type="submit"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button:not(:disabled), a[href], [role="button"], input[type="button"], input[type="submit"]):active {
+  filter: brightness(0.9);
+  transform: scale(0.97);
+}
+
+:where(button, a[href], [role="button"], input[type="button"], input[type="submit"]):focus-visible {
+  outline: 3px solid rgba(141, 110, 99, 0.65);
+  outline-offset: 3px;
+}
+
 ::selection {
   background: rgba(141, 110, 99, 0.2);
 }
