@@ -9,6 +9,8 @@ type OrderRequestItem = {
   name?: string;
   price?: number;
   quantity?: number;
+  selected_size?: string;
+  size_system?: "EU" | "US" | "UK";
 };
 
 type OrderRequest = {
@@ -83,22 +85,32 @@ export async function POST(request: Request) {
     if (!item || typeof item.product_id !== "string" || !item.product_id.trim()) {
       return null;
     }
-    return { product_id: item.product_id.trim(), quantity: Number(item.quantity) };
+    return {
+      product_id: item.product_id.trim(),
+      quantity: Number(item.quantity),
+      selected_size: typeof item.selected_size === "string" ? item.selected_size.trim() : "",
+      size_system: item.size_system,
+    };
   });
   if (requestedItems.some((item) => item === null)) {
     return NextResponse.json({ error: "Every item must reference a valid product." }, { status: 400 });
   }
 
-  const quantitiesByProduct = new Map<string, number>();
+  const quantitiesByProductSize = new Map<string, { product_id: string; quantity: number; selected_size: string; size_system?: "EU" | "US" | "UK" }>();
   for (const item of requestedItems) {
     if (!item) continue;
-    const quantity = (quantitiesByProduct.get(item.product_id) ?? 0) + item.quantity;
+    const key = `${item.product_id}\u0000${item.size_system ?? ""}\u0000${item.selected_size}`;
+    const quantity = (quantitiesByProductSize.get(key)?.quantity ?? 0) + item.quantity;
     if (!Number.isInteger(item.quantity) || item.quantity <= 0 || quantity > 50) {
       return NextResponse.json({ error: "Invalid item quantity." }, { status: 400 });
     }
-    quantitiesByProduct.set(item.product_id, quantity);
+    quantitiesByProductSize.set(key, { ...item, quantity });
   }
-  const normalizedItems = [...quantitiesByProduct.entries()].map(([product_id, quantity]) => ({ product_id, quantity }));
+  const normalizedItems = [...quantitiesByProductSize.values()];
+  const quantitiesByProduct = new Map<string, number>();
+  for (const item of normalizedItems) {
+    quantitiesByProduct.set(item.product_id, (quantitiesByProduct.get(item.product_id) ?? 0) + item.quantity);
+  }
 
   try {
     const supabase = createAdminClient();
@@ -108,10 +120,10 @@ export async function POST(request: Request) {
     // SECURITY: never trust price, name or stock supplied by the client. Look up
     // every product server-side and price the order using the authoritative data
     // stored in Supabase, so a tampered request can't buy items for an arbitrary price.
-    const productIds = normalizedItems.map((item) => item.product_id);
+    const productIds = [...quantitiesByProduct.keys()];
     const { data: products, error: productsError } = await supabase
       .from("products")
-      .select("id,name,price,stock,hidden")
+      .select("id,name,price,stock,hidden,size_options")
       .in("id", productIds);
     if (productsError) throw productsError;
 
@@ -121,14 +133,51 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "One or more items are no longer available." }, { status: 400 });
     }
 
-    const items: { product_id: string; product_name: string; quantity: number; price: number }[] = [];
+    const items: { product_id: string; product_name: string; quantity: number; price: number; selected_size?: string; size_system?: "EU" | "US" | "UK" }[] = [];
     for (const requested of normalizedItems) {
       const product = productMap.get(requested.product_id)!;
       if (product.hidden) {
         return NextResponse.json({ error: `${product.name} is not currently available.` }, { status: 400 });
       }
-      if (product.stock < requested.quantity) {
+      const totalRequested = quantitiesByProduct.get(requested.product_id) ?? requested.quantity;
+      if (product.stock < totalRequested) {
         return NextResponse.json({ error: `Only ${product.stock} unit(s) of ${product.name} left in stock.` }, { status: 400 });
+      }
+      const sizeOptions = product.size_options as { type?: unknown; system?: unknown; available?: unknown } | null;
+      const selectedSize = requested.selected_size;
+      const selectedSystem = requested.size_system;
+      if (sizeOptions !== null) {
+        if (
+          typeof sizeOptions !== "object" ||
+          (sizeOptions.type !== "apparel" && sizeOptions.type !== "footwear") ||
+          !Array.isArray(sizeOptions.available) ||
+          (sizeOptions.type === "footwear" &&
+            !["EU", "US", "UK"].includes(String(sizeOptions.system)))
+        ) {
+          console.error("ORDER SIZE VALIDATION ERROR: Product has invalid size options.", { product_id: product.id });
+          return NextResponse.json({ error: `Size options for ${product.name} need to be checked by the store.` }, { status: 409 });
+        }
+        if (typeof selectedSize !== "string" || !sizeOptions.available.includes(selectedSize)) {
+          return NextResponse.json({ error: `Choose an available size for ${product.name}.` }, { status: 400 });
+        }
+        if (
+          sizeOptions.type === "footwear" &&
+          (selectedSystem !== sizeOptions.system || !["EU", "US", "UK"].includes(String(selectedSystem)))
+        ) {
+          return NextResponse.json({ error: `Choose the valid shoe size system for ${product.name}.` }, { status: 400 });
+        }
+        items.push({
+          product_id: product.id,
+          product_name: product.name,
+          quantity: requested.quantity,
+          price: Number(product.price),
+          selected_size: selectedSize,
+          size_system: sizeOptions.type === "footwear" ? selectedSystem as "EU" | "US" | "UK" : undefined,
+        });
+        continue;
+      }
+      if (selectedSize || selectedSystem) {
+        return NextResponse.json({ error: `${product.name} does not have size options.` }, { status: 400 });
       }
       items.push({
         product_id: product.id,
@@ -166,17 +215,26 @@ export async function POST(request: Request) {
     if (error) throw error;
 
     const { error: itemsError } = await supabase.from("order_items").insert(
-      items.map((item) => ({ ...item, order_id: order.id })),
+      items.map((item) => ({
+        ...item,
+        order_id: order.id,
+        selected_size: item.selected_size ?? null,
+        size_system: item.size_system ?? null,
+      })),
     );
     if (itemsError) throw itemsError;
 
     // Decrement stock now that the order (and its items) have been recorded, so
     // concurrent checkouts can't oversell the same low-stock product.
+    const stockAdjusted = new Set<string>();
     for (const item of items) {
+      if (stockAdjusted.has(item.product_id)) continue;
+      stockAdjusted.add(item.product_id);
       const product = productMap.get(item.product_id)!;
+      const requestedQuantity = quantitiesByProduct.get(item.product_id) ?? item.quantity;
       const { error: stockError } = await supabase
         .from("products")
-        .update({ stock: Math.max(0, product.stock - item.quantity) })
+        .update({ stock: Math.max(0, product.stock - requestedQuantity) })
         .eq("id", item.product_id)
         .eq("stock", product.stock);
       if (stockError) throw stockError;

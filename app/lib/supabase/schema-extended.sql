@@ -38,6 +38,8 @@ create table if not exists public.products (
   stock integer not null default 0,
   image text not null,
   images jsonb not null default '[]'::jsonb,
+  size_options jsonb,
+  size_options jsonb,
   featured boolean not null default false,
   hidden boolean not null default false,
   skin_type text,
@@ -67,6 +69,10 @@ create table if not exists public.order_items (
   product_name text not null,
   quantity integer not null default 1,
   price numeric not null,
+  selected_size text,
+  size_system text check (size_system is null or size_system in ('EU', 'US', 'UK')),
+  selected_size text,
+  size_system text check (size_system is null or size_system in ('EU', 'US', 'UK')),
   created_at timestamptz not null default now()
 );
 

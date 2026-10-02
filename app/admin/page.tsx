@@ -889,7 +889,9 @@ export default function AdminPage() {
                 </div>
               ) : filteredOrders.map((order) => {
                 const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                const orderedItems = order.items.map((item) => `${item.product.name} x${item.quantity}`).join(" • ");
+                const orderedItems = order.items
+                  .map((item) => `${item.product.name}${item.selectedSize ? ` (${item.sizeSystem ? `${item.sizeSystem} ` : ""}${item.selectedSize})` : ""} x${item.quantity}`)
+                  .join(" • ");
 
                 return (
                   <div key={order.id} className="rounded-2xl border border-slate-200 p-4">
@@ -897,6 +899,7 @@ export default function AdminPage() {
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Order #{order.id.slice(-6)}</p>
                         <p className="mt-2 font-semibold text-slate-900">{order.customerName}</p>
+                        <p className="text-sm text-slate-500">{order.customerPhone ?? order.customerEmail}</p>
                         <p className="text-sm text-slate-500">{order.customerEmail}</p>
                       </div>
                       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>
@@ -908,6 +911,7 @@ export default function AdminPage() {
                       <p><span className="font-medium text-slate-700">Date:</span> {formatOrderDate(order.createdAt)}</p>
                       <p><span className="font-medium text-slate-700">Items:</span> {itemCount}</p>
                       <p><span className="font-medium text-slate-700">Payment:</span> {order.paymentMethod}</p>
+                      {order.paymentReference ? <p><span className="font-medium text-slate-700">Reference:</span> {order.paymentReference}</p> : null}
                       <p><span className="font-medium text-slate-700">Total:</span> K{order.total}</p>
                     </div>
 
@@ -917,7 +921,7 @@ export default function AdminPage() {
                     </div>
 
                     {order.shippingAddress ? (
-                      <DeliveryLocationPreview address={order.shippingAddress} city={order.city} />
+                      <DeliveryLocationPreview address={order.shippingAddress} />
                     ) : null}
 
                     {order.referralCode ? (

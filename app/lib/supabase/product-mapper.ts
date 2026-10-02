@@ -17,6 +17,7 @@ function stringArray(value: unknown) {
 }
 
 export function mapSupabaseProduct(row: Record<string, unknown>): Product {
+  const sizeOptions = row.size_options;
   return {
     id: String(row.id),
     name: String(row.name ?? ""),
@@ -35,6 +36,24 @@ export function mapSupabaseProduct(row: Record<string, unknown>): Product {
     featured: Boolean(row.featured),
     hidden: Boolean(row.hidden ?? (row.is_active === false)),
     productType: optionalString(row.productType ?? row.product_type),
+    sizeOptions:
+      sizeOptions &&
+      typeof sizeOptions === "object" &&
+      !Array.isArray(sizeOptions) &&
+      ((sizeOptions as Record<string, unknown>).type === "apparel" ||
+        (sizeOptions as Record<string, unknown>).type === "footwear") &&
+      Array.isArray((sizeOptions as Record<string, unknown>).available)
+        ? {
+            type: (sizeOptions as Record<string, unknown>).type as "apparel" | "footwear",
+            system:
+              (sizeOptions as Record<string, unknown>).system === "EU" ||
+              (sizeOptions as Record<string, unknown>).system === "US" ||
+              (sizeOptions as Record<string, unknown>).system === "UK"
+                ? ((sizeOptions as Record<string, unknown>).system as "EU" | "US" | "UK")
+                : undefined,
+            available: stringArray((sizeOptions as Record<string, unknown>).available) ?? [],
+          }
+        : undefined,
     discount: optionalNumber(row.discount),
     tags: stringArray(row.tags),
     newArrival: Boolean(row.newArrival ?? row.new_arrival),

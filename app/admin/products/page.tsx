@@ -15,6 +15,13 @@ type AdminProduct = {
   badge: string | null;
   image: string | null;
   hidden: boolean;
+  size_options: ProductSizeOptions | null;
+};
+
+type ProductSizeOptions = {
+  type: "apparel" | "footwear";
+  system?: "EU" | "US" | "UK";
+  available: string[];
 };
 
 export default async function Products() {
@@ -53,6 +60,7 @@ export default async function Products() {
             <tr>
               <th>Product</th>
               <th>Category</th>
+              <th>Sizes</th>
               <th>Price</th>
               <th>Stock</th>
               <th>Status</th>
@@ -75,6 +83,11 @@ export default async function Products() {
                 </td>
 
                 <td>{p.category}</td>
+                <td>
+                  {p.size_options
+                    ? `${p.size_options.type === "footwear" ? `${p.size_options.system} ` : ""}${p.size_options.available.join(", ")}`
+                    : "—"}
+                </td>
                 <td>K{Number(p.price).toFixed(2)}</td>
                 <td>{p.stock}</td>
                 <td>{p.hidden ? "Hidden" : "Active"}</td>
@@ -186,6 +199,39 @@ function ProductForm({ product }: { product?: AdminProduct }) {
           />
         </label>
       </div>
+
+      <fieldset className="panel">
+        <legend>Size options (optional)</legend>
+        <div className="form-grid">
+          <label>
+            Item type
+            <select name="sizeType" defaultValue={product?.size_options?.type ?? ""}>
+              <option value="">No size selection</option>
+              <option value="apparel">Apparel</option>
+              <option value="footwear">Footwear</option>
+            </select>
+          </label>
+          <label>
+            Shoe size system
+            <select name="sizeSystem" defaultValue={product?.size_options?.system ?? "EU"}>
+              <option value="EU">EU</option>
+              <option value="US">US</option>
+              <option value="UK">UK</option>
+            </select>
+          </label>
+          <label>
+            Available sizes
+            <input
+              name="availableSizes"
+              defaultValue={product?.size_options?.available.join(", ") ?? ""}
+              placeholder={product?.size_options?.type === "footwear" ? "e.g. 38, 39, 40, 41" : "e.g. S, M, L, XL"}
+            />
+          </label>
+        </div>
+        <p style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
+          Use comma-separated sizes. Apparel uses XS, S, M, L, XL, or XXL. Footwear can use EU, US, or UK sizing. This applies to the Apparel and footwear category.
+        </p>
+      </fieldset>
 
       <ProductImageUpload
         defaultValue={product?.image || ""}

@@ -4,6 +4,30 @@ import { categories } from "@/app/lib/store-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+function hasValidSizeOptions(product: Product) {
+  const options = product.sizeOptions;
+  if (options == null) return true;
+  if (
+    (options.type !== "apparel" && options.type !== "footwear") ||
+    !Array.isArray(options.available) ||
+    options.available.length === 0 ||
+    options.available.length > 30 ||
+    options.available.some((size) => typeof size !== "string" || size.length === 0 || size.length > 12) ||
+    product.category !== "Apparel and footwear"
+  ) {
+    return false;
+  }
+
+  if (options.type === "apparel") {
+    return options.available.every((size) => ["XS", "S", "M", "L", "XL", "XXL"].includes(size.toUpperCase()));
+  }
+
+  return (
+    ["EU", "US", "UK"].includes(String(options.system)) &&
+    options.available.every((size) => /^\d{1,3}(?:\.\d)?$/.test(size))
+  );
+}
+
 async function authorizeAdmin() {
   const sessionClient = await createClient();
   const {
@@ -52,6 +76,15 @@ function toDatabaseProduct(product: Product) {
     featured: product.featured,
     hidden: product.hidden ?? false,
     productType: product.productType ?? null,
+    size_options: product.sizeOptions
+      ? {
+          ...product.sizeOptions,
+          available:
+            product.sizeOptions.type === "apparel"
+              ? product.sizeOptions.available.map((size) => size.toUpperCase())
+              : product.sizeOptions.available,
+        }
+      : null,
     discount: product.discount ?? null,
   };
 }
@@ -75,7 +108,8 @@ export async function POST(request: Request) {
       !Number.isFinite(product.price) ||
       product.price < 0 ||
       !Number.isInteger(product.stock) ||
-      product.stock < 0
+      product.stock < 0 ||
+      !hasValidSizeOptions(product)
     ) {
       return NextResponse.json({ error: "Product name, slug, category, price, or stock is invalid." }, { status: 400 });
     }

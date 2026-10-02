@@ -312,13 +312,22 @@ export default function ShopPage() {
                   >
                     Details
                   </Link>
-                  <button
-                    onClick={() => addItem(product)}
-                    className="rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-medium text-[#2f241f] transition hover:bg-[#c99d89]"
-                    disabled={product.stock < 1}
-                  >
-                    {product.stock < 1 ? "Out of stock" : "Add to bag"}
-                  </button>
+                  {product.sizeOptions ? (
+                    <Link
+                      href={`/shop/${product.slug}`}
+                      className="rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-medium text-[#2f241f] transition hover:bg-[#c99d89]"
+                    >
+                      Choose size
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => addItem(product)}
+                      className="rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-medium text-[#2f241f] transition hover:bg-[#c99d89]"
+                      disabled={product.stock < 1}
+                    >
+                      {product.stock < 1 ? "Out of stock" : "Add to bag"}
+                    </button>
+                  )}
                 </div>
               </div>
             </article>

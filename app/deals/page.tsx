@@ -87,12 +87,21 @@ export default function DealsPage() {
                   <span className="text-sm text-slate-400 line-through">{formatPrice(originalPrice)}</span>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <button
-                    onClick={() => addItem(product)}
-                    className="flex-1 rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89]"
-                  >
-                    Add to bag
-                  </button>
+                  {product.sizeOptions ? (
+                    <Link
+                      href={`/shop/${product.slug}`}
+                      className="flex-1 rounded-full bg-[#d9b8a7] px-4 py-2 text-center text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89]"
+                    >
+                      Choose size
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => addItem(product)}
+                      className="flex-1 rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89]"
+                    >
+                      Add to bag
+                    </button>
+                  )}
                   <Link
                     href={`/shop/${product.slug}`}
                     className="rounded-full border border-[#eadfce] bg-[#fbf7f2] px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]"

@@ -29,7 +29,7 @@ export async function fetchOrdersFromSupabase() {
     return [] as Order[];
   }
 
-  const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("orders").select("*,order_items(*)").order("created_at", { ascending: false });
   if (error || !data) {
     return [] as Order[];
   }
@@ -40,8 +40,33 @@ export async function fetchOrdersFromSupabase() {
     customerName: row.customer_name,
     customerEmail: row.email ?? "",
     customerPhone: row.phone ?? undefined,
-    items: Array.isArray(row.items)
-      ? row.items
+    items: Array.isArray(row.order_items)
+      ? row.order_items.map((item: {
+          product_id: string | null;
+          product_name: string;
+          quantity: number;
+          price?: number;
+          unit_price?: number;
+          selected_size?: string | null;
+          size_system?: "EU" | "US" | "UK" | null;
+        }) => ({
+          product: {
+            id: String(item.product_id ?? ""),
+            name: item.product_name,
+            slug: "",
+            category: "Accessories" as const,
+            description: "",
+            shortDescription: item.product_name,
+            benefits: [],
+            price: Number(item.price ?? item.unit_price) || 0,
+            stock: Number(item.quantity) || 0,
+            image: "🛍️",
+            featured: false,
+          },
+          quantity: Number(item.quantity) || 0,
+          selectedSize: item.selected_size ?? undefined,
+          sizeSystem: item.size_system ?? undefined,
+        }))
       : [],
     subtotal: Number(row.subtotal) || 0,
     deliveryFee: Number(row.delivery_fee) || 0,
@@ -50,6 +75,7 @@ export async function fetchOrdersFromSupabase() {
     status: row.status,
     paymentMethod: row.payment_method,
     paymentStatus: "pending",
+    paymentReference: row.payment_reference ?? undefined,
     shippingAddress: [row.address, row.city, row.province].filter(Boolean).join(", "),
     city: row.city ?? undefined,
     referralCode: row.referral_code ?? undefined,

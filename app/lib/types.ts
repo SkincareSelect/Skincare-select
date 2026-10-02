@@ -49,6 +49,11 @@ export interface Product {
   ingredients?: string[];
   instructions?: string;
   size?: string;
+  sizeOptions?: {
+    type: "apparel" | "footwear";
+    system?: "EU" | "US" | "UK";
+    available: string[];
+  };
   weight?: string;
   suitableFor?: string[];
   tags?: string[];
@@ -77,6 +82,8 @@ export interface ProductCatalogueResult {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedSize?: string;
+  sizeSystem?: "EU" | "US" | "UK";
 }
 
 export interface Order {
@@ -93,6 +100,7 @@ export interface Order {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus?: PaymentStatus;
+  paymentReference?: string;
   shippingAddress: string;
   area?: string;
   city?: string;

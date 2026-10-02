@@ -49,7 +49,7 @@ type OrderConfirmation = {
   paymentMethod: AvailablePaymentMethod;
   paymentReference: string;
   deliveryLocation: DeliveryLocation;
-  items: Array<{ product_id: string; product_name: string; quantity: number; price: number }>;
+  items: Array<{ product_id: string; product_name: string; quantity: number; price: number; selected_size?: string; size_system?: "EU" | "US" | "UK" }>;
   subtotal: number;
   deliveryFee: number;
   discount: number;
@@ -135,6 +135,8 @@ export default function CheckoutPage() {
             name: item.product.name,
             price: item.product.price,
             quantity: item.quantity,
+            selected_size: item.selectedSize,
+            size_system: item.sizeSystem,
           })),
         }),
       });
@@ -211,8 +213,8 @@ export default function CheckoutPage() {
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
           {confirmation.items.map((item) => (
-            <div key={item.product_id} className="flex items-center justify-between gap-4 rounded-2xl border border-[#eadfce] px-4 py-3 text-sm">
-              <span>{item.product_name} × {item.quantity}</span>
+            <div key={`${item.product_id}-${item.size_system ?? ""}-${item.selected_size ?? ""}`} className="flex items-center justify-between gap-4 rounded-2xl border border-[#eadfce] px-4 py-3 text-sm">
+              <span>{item.product_name}{item.selected_size ? ` (${item.size_system ? `${item.size_system} ` : ""}${item.selected_size})` : ""} × {item.quantity}</span>
               <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
             </div>
           ))}
@@ -332,8 +334,8 @@ export default function CheckoutPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Order summary</p>
         <div className="mt-6 space-y-3">
           {items.map((item) => (
-            <div key={item.product.id} className="flex items-center justify-between rounded-2xl bg-[#fbf7f2] px-4 py-3">
-              <span>{item.product.name} × {item.quantity}</span>
+            <div key={`${item.product.id}-${item.sizeSystem ?? ""}-${item.selectedSize ?? ""}`} className="flex items-center justify-between rounded-2xl bg-[#fbf7f2] px-4 py-3">
+              <span>{item.product.name}{item.selectedSize ? ` (${item.sizeSystem ? `${item.sizeSystem} ` : ""}${item.selectedSize})` : ""} × {item.quantity}</span>
               <span className="font-semibold">{formatPrice(item.product.price * item.quantity)}</span>
             </div>
           ))}

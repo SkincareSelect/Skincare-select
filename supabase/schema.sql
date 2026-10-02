@@ -18,6 +18,7 @@ create table if not exists public.products (
   stock integer not null default 0 check (stock >= 0),
   badge text,
   image_url text,
+  size_options jsonb,
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
@@ -75,7 +76,9 @@ create table if not exists public.order_items (
   product_id uuid references public.products(id) on delete set null,
   product_name text not null,
   quantity integer not null check (quantity > 0),
-  unit_price numeric(12,2) not null
+  unit_price numeric(12,2) not null,
+  selected_size text,
+  size_system text check (size_system is null or size_system in ('EU', 'US', 'UK'))
 );
 
 create table if not exists public.payments (

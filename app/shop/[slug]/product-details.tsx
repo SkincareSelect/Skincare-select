@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/app/components/cart-provider";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
@@ -19,6 +20,15 @@ export function ProductDetails({
   catalogue: Product[];
 }) {
   const { addItem } = useCart();
+  const router = useRouter();
+  const [selectedSize, setSelectedSize] = useState("");
+  const sizeOptions = product.sizeOptions;
+  const selectedSystem = sizeOptions?.type === "footwear" ? sizeOptions.system : undefined;
+  const addAndCheckout = () => {
+    if (sizeOptions && !selectedSize) return;
+    addItem(product, sizeOptions ? selectedSize : undefined, selectedSystem);
+    router.push("/checkout");
+  };
 
   const relatedProducts = useMemo(() => {
     return catalogue
@@ -92,20 +102,42 @@ export function ProductDetails({
             <p className="mt-3 text-4xl font-semibold text-slate-900">{formatPrice(product.price)}</p>
             {product.originalPrice ? <p className="mt-2 text-sm text-slate-400 line-through">{formatPrice(product.originalPrice)}</p> : null}
             <p className="mt-4 text-sm text-slate-500">Secure checkout with Zambia-friendly payment methods.</p>
+            {sizeOptions ? (
+              <div className="mt-5">
+                <label htmlFor="product-size" className="mb-2 block text-sm font-semibold text-slate-700">
+                  {sizeOptions.type === "footwear" ? `Shoe size (${sizeOptions.system})` : "Apparel size"}
+                </label>
+                <select
+                  id="product-size"
+                  value={selectedSize}
+                  onChange={(event) => setSelectedSize(event.target.value)}
+                  className="w-full rounded-xl border border-[#eadfce] bg-white px-4 py-3"
+                  required
+                >
+                  <option value="">Choose a size</option>
+                  {sizeOptions.available.map((size) => (
+                    <option key={size} value={size}>{sizeOptions.system ? `${sizeOptions.system} ${size}` : size}</option>
+                  ))}
+                </select>
+                <p className="mt-2 text-sm text-slate-500">Only sizes currently marked available can be selected.</p>
+              </div>
+            ) : null}
             <button
-              onClick={() => addItem(product)}
-              disabled={product.stock < 1}
+              onClick={() => addItem(product, sizeOptions ? selectedSize : undefined, selectedSystem)}
+              disabled={product.stock < 1 || (Boolean(sizeOptions) && !selectedSize)}
               className="mt-8 w-full rounded-full bg-[#d9b8a7] px-4 py-3 text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {product.stock < 1 ? "Out of stock" : "Add to bag"}
+              {product.stock < 1 ? "Out of stock" : sizeOptions && !selectedSize ? "Choose a size" : "Add to bag"}
             </button>
             {product.stock > 0 ? (
-              <Link
-                href="/checkout"
-                className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-[#eadfce] bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#d8c1b1] hover:bg-[#fbf7f2]"
+              <button
+                type="button"
+                onClick={addAndCheckout}
+                disabled={Boolean(sizeOptions) && !selectedSize}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-[#eadfce] bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#d8c1b1] hover:bg-[#fbf7f2] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Buy now
-              </Link>
+              </button>
             ) : null}
           </div>
 
@@ -113,6 +145,11 @@ export function ProductDetails({
             <p className="font-semibold text-slate-900">Product info</p>
             <div className="mt-4 grid gap-3 text-sm text-slate-600">
               {product.size ? <p>Size: {product.size}</p> : null}
+              {sizeOptions ? (
+                <p>
+                  Available {sizeOptions.type === "footwear" ? `shoe sizes (${sizeOptions.system})` : "apparel sizes"}: {sizeOptions.available.join(", ")}
+                </p>
+              ) : null}
               {product.weight ? <p>Weight: {product.weight}</p> : null}
               {product.suitableFor ? <p>Suitable for: {product.suitableFor.join(", ")}</p> : null}
               {product.sku ? <p>SKU: {product.sku}</p> : null}

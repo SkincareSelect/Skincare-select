@@ -13,6 +13,7 @@ create table if not exists public.products (
   tag text not null,
   stock integer not null default 0,
   image text not null,
+  size_options jsonb,
   featured boolean not null default false,
   created_at timestamptz not null default now()
 );

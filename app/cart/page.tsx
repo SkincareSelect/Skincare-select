@@ -33,20 +33,21 @@ export default function CartPage() {
             <div className="rounded-[1.5rem] bg-[#fbf7f2] p-6 text-slate-600">Your cart is empty. Add a few favourites to get started.</div>
           ) : (
             items.map((item) => (
-              <div key={item.product.id} className="flex flex-col gap-4 rounded-[1.5rem] border border-[#eadfce] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={`${item.product.id}-${item.sizeSystem ?? ""}-${item.selectedSize ?? ""}`} className="flex flex-col gap-4 rounded-[1.5rem] border border-[#eadfce] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex h-14 w-14 items-center justify-center rounded-[1rem] bg-[#fbf7f2] text-3xl">
                     <ProductThumb product={item.product} className="h-full w-full" emojiClassName="text-3xl" />
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">{item.product.name}</p>
+                    {item.selectedSize ? <p className="text-sm text-slate-600">Size: {item.sizeSystem ? `${item.sizeSystem} ` : ""}{item.selectedSize}</p> : null}
                     <p className="text-sm text-slate-500">{formatPrice(item.product.price)} each</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <select
                     value={item.quantity}
-                    onChange={(event) => updateQuantity(item.product.id, Number(event.target.value))}
+                    onChange={(event) => updateQuantity(item.product.id, Number(event.target.value), item.selectedSize, item.sizeSystem)}
                     className="rounded-full border border-[#eadfce] bg-white px-3 py-2 text-sm"
                   >
                     {Array.from({ length: Math.min(5, item.product.stock) }, (_, index) => index + 1).map((count) => (
@@ -55,7 +56,7 @@ export default function CartPage() {
                       </option>
                     ))}
                   </select>
-                  <button onClick={() => removeItem(item.product.id)} className="text-sm font-medium text-rose-600">
+                  <button onClick={() => removeItem(item.product.id, item.selectedSize, item.sizeSystem)} className="text-sm font-medium text-rose-600">
                     Remove
                   </button>
                 </div>

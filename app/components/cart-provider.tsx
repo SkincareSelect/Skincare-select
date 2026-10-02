@@ -7,9 +7,9 @@ type CartContextValue = {
   items: CartItem[];
   itemCount: number;
   subtotal: number;
-  addItem: (product: Product) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
+  addItem: (product: Product, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => void;
+  updateQuantity: (productId: string, quantity: number, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => void;
+  removeItem: (productId: string, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => void;
   clearCart: () => void;
 };
 
@@ -63,33 +63,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items]);
 
-  const addItem = useCallback((product: Product) => {
+  const addItem = useCallback((product: Product, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => {
     setItems((currentItems) => {
-      const existing = currentItems.find((item) => item.product.id === product.id);
+      const existing = currentItems.find((item) =>
+        item.product.id === product.id &&
+        item.selectedSize === selectedSize &&
+        item.sizeSystem === sizeSystem,
+      );
       if (existing) {
         return currentItems.map((item) =>
-          item.product.id === product.id
+          item.product.id === product.id &&
+          item.selectedSize === selectedSize &&
+          item.sizeSystem === sizeSystem
             ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) }
             : item,
         );
       }
 
-      return product.stock > 0 ? [...currentItems, { product, quantity: 1 }] : currentItems;
+      return product.stock > 0 ? [...currentItems, { product, quantity: 1, selectedSize, sizeSystem }] : currentItems;
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((currentItems) => currentItems.filter((item) => item.product.id !== productId));
+  const removeItem = useCallback((productId: string, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => {
+    setItems((currentItems) => currentItems.filter((item) => !(
+      item.product.id === productId &&
+      (selectedSize === undefined || (item.selectedSize === selectedSize && item.sizeSystem === sizeSystem))
+    )));
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(productId, selectedSize, sizeSystem);
       return;
     }
 
     setItems((currentItems) => currentItems.map((item) => (
-     item.product.id === productId
+     item.product.id === productId &&
+     (selectedSize === undefined || (item.selectedSize === selectedSize && item.sizeSystem === sizeSystem))
        ? { ...item, quantity: Math.min(quantity, item.product.stock) }
        : item
     )));

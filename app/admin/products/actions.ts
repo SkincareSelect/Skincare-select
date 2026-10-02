@@ -12,6 +12,10 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function isShoeSizeSystem(value: string): value is "EU" | "US" | "UK" {
+  return value === "EU" || value === "US" || value === "UK";
+}
+
 async function requireProductAdmin() {
   const authClient = await createClient();
   const {
@@ -45,6 +49,9 @@ export async function saveProduct(formData: FormData) {
   const originalPriceValue = String(formData.get("originalPrice") || "").trim();
   const originalPrice = originalPriceValue ? Number(originalPriceValue) : null;
   const category = String(formData.get("category") || "");
+  const sizeTypeValue = String(formData.get("sizeType") || "");
+  const sizeSystemValue = String(formData.get("sizeSystem") || "");
+  const availableSizesValue = String(formData.get("availableSizes") || "");
 
   if (
     !name ||
@@ -61,6 +68,44 @@ export async function saveProduct(formData: FormData) {
     throw new Error("Enter a valid original price.");
   }
 
+  let sizeOptions: { type: "apparel" | "footwear"; system?: "EU" | "US" | "UK"; available: string[] } | null = null;
+  if (sizeTypeValue) {
+    if (sizeTypeValue !== "apparel" && sizeTypeValue !== "footwear") {
+      throw new Error("Choose apparel or footwear for size options.");
+    }
+    const enteredSizes = availableSizesValue.split(",").map((size) => size.trim()).filter(Boolean);
+    const available =
+      sizeTypeValue === "apparel"
+        ? [...new Set(enteredSizes.map((size) => size.toUpperCase()))]
+        : [...new Set(enteredSizes)];
+    if (available.length === 0 || available.length > 30 || available.some((size) => size.length > 12)) {
+      throw new Error("Enter between 1 and 30 available sizes, separated by commas.");
+    }
+    if (
+      sizeTypeValue === "apparel" &&
+      available.some((size) => !["XS", "S", "M", "L", "XL", "XXL"].includes(size.toUpperCase()))
+    ) {
+      throw new Error("Apparel sizes must be XS, S, M, L, XL, or XXL.");
+    }
+    if (
+      sizeTypeValue === "footwear" &&
+      (!isShoeSizeSystem(sizeSystemValue) ||
+        available.some((size) => !/^\d{1,3}(?:\.\d)?$/.test(size)))
+    ) {
+      throw new Error("Choose EU, US, or UK sizing and enter numeric shoe sizes.");
+    }
+    if (category !== "Apparel and footwear") {
+      throw new Error("Size options are only available for Apparel and footwear products.");
+    }
+    sizeOptions = {
+      type: sizeTypeValue,
+      system: sizeTypeValue === "footwear" && isShoeSizeSystem(sizeSystemValue) ? sizeSystemValue : undefined,
+      available,
+    };
+  } else if (availableSizesValue.trim()) {
+    throw new Error("Choose an item type before entering available sizes.");
+  }
+
   const description = String(formData.get("description") || "").trim();
   const image = String(formData.get("image") || "").trim();
   const payload = {
@@ -69,6 +114,7 @@ export async function saveProduct(formData: FormData) {
     description,
     shortDescription: description || name,
     category,
+    size_options: sizeOptions,
     price,
     originalPrice,
     stock,
