@@ -12,6 +12,8 @@ import {
   normalizeReferralCode,
 } from "@/app/lib/store-data";
 import type { PaymentMethod } from "@/app/lib/types";
+import { getProductPrice } from "@/app/lib/price-cut";
+import { ProductPrice } from "@/app/components/product-price";
 
 const DeliveryLocationPicker = dynamic(
   () => import("@/app/components/delivery-location-picker").then((module) => module.DeliveryLocationPicker),
@@ -49,7 +51,17 @@ type OrderConfirmation = {
   paymentMethod: AvailablePaymentMethod;
   paymentReference: string;
   deliveryLocation: DeliveryLocation;
-  items: Array<{ product_id: string; product_name: string; quantity: number; price: number; selected_size?: string; size_system?: "EU" | "US" | "UK" }>;
+  items: Array<{
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    price: number;
+    selected_size?: string;
+    size_system?: "EU" | "US" | "UK";
+    original_price?: number;
+    discount_percentage?: number;
+    discount_amount?: number;
+  }>;
   subtotal: number;
   deliveryFee: number;
   discount: number;
@@ -214,7 +226,14 @@ export default function CheckoutPage() {
           <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
           {confirmation.items.map((item) => (
             <div key={`${item.product_id}-${item.size_system ?? ""}-${item.selected_size ?? ""}`} className="flex items-center justify-between gap-4 rounded-2xl border border-[#eadfce] px-4 py-3 text-sm">
-              <span>{item.product_name}{item.selected_size ? ` (${item.size_system ? `${item.size_system} ` : ""}${item.selected_size})` : ""} × {item.quantity}</span>
+              <div>
+                <p>{item.product_name}{item.selected_size ? ` (${item.size_system ? `${item.size_system} ` : ""}${item.selected_size})` : ""} × {item.quantity}</p>
+                {item.original_price !== undefined && item.discount_percentage !== undefined && item.discount_percentage > 0 ? (
+                  <p className="mt-1 text-xs text-emerald-700">
+                    Was {formatPrice(item.original_price)} · {item.discount_percentage}% OFF · Save {formatPrice(item.discount_amount ?? 0)}
+                  </p>
+                ) : null}
+              </div>
               <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
             </div>
           ))}
@@ -229,15 +248,21 @@ export default function CheckoutPage() {
         </div>
 
         <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          We will contact you using the details provided about delivery and payment verification. Look out for rewards and discounts from Zhurie &amp; Co.
+          We will contact you using the details provided about delivery and payment verification. Look out for rewards and discounts.
         </p>
       </section>
     );
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <form onSubmit={handleSubmit} className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">
+    <div className="space-y-6">
+      <header className="rounded-[2rem] border border-[#eadfce] bg-[#fbf7f2] px-6 py-5 sm:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">ZHURIE &amp; CO CHECKOUT</p>
+        <p className="mt-2 text-slate-600">Your selected products are ready. Choose a payment method to proceed.</p>
+      </header>
+
+      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <form onSubmit={handleSubmit} className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Checkout as guest</p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Complete your order</h1>
         <p className="mt-2 text-slate-600">Guest checkout is supported. You can create an account after ordering.</p>
@@ -286,12 +311,27 @@ export default function CheckoutPage() {
           </p>
         </div>
 
+        <section className="mt-8 rounded-2xl border border-[#eadfce] bg-[#fbf7f2] p-5">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#8d6e63]">ZHURIE PAY</p>
+          <h2 className="mt-2 text-lg font-semibold text-slate-900">Central payment orchestration platform</h2>
+          <p className="mt-1 text-sm text-slate-600">Payment processing <span aria-hidden="true">•</span> Verification <span aria-hidden="true">•</span> Reconciliation</p>
+        </section>
+
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-slate-700">Payment method</label>
           <div className="grid gap-3 sm:grid-cols-2">
             {paymentMethods.map((method) => (
                <label key={method} className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${paymentMethod === method ? "border-[#8d6e63] bg-[#fbf7f2]" : "border-[#eadfce] bg-white"}`}>
-                 <input type="radio" name="payment_method" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />
+                 <input
+                   type="radio"
+                   name="payment_method"
+                   value={method}
+                   checked={paymentMethod === method}
+                   onChange={() => {
+                     setPaymentMethod(method);
+                     setPaymentReference("");
+                   }}
+                 />
                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${paymentMethodBadges[method].tint}`}>
                    {(() => {
                      const Icon = paymentMethodBadges[method].icon;
@@ -324,9 +364,11 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <button type="submit" disabled={loading || !paymentMethod || !deliveryLocation} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
-          {loading ? "Submitting payment..." : "Submit payment"}
-        </button>
+        {paymentMethod ? (
+          <button type="submit" disabled={loading || !deliveryLocation} className="mt-8 rounded-full bg-[#2f241f] px-6 py-3 font-semibold text-white disabled:opacity-70">
+            {loading ? "Submitting payment..." : "Submit payment"}
+          </button>
+        ) : null}
         {status ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{status}</p> : null}
       </form>
 
@@ -334,9 +376,12 @@ export default function CheckoutPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Order summary</p>
         <div className="mt-6 space-y-3">
           {items.map((item) => (
-            <div key={`${item.product.id}-${item.sizeSystem ?? ""}-${item.selectedSize ?? ""}`} className="flex items-center justify-between rounded-2xl bg-[#fbf7f2] px-4 py-3">
-              <span>{item.product.name}{item.selectedSize ? ` (${item.sizeSystem ? `${item.sizeSystem} ` : ""}${item.selectedSize})` : ""} × {item.quantity}</span>
-              <span className="font-semibold">{formatPrice(item.product.price * item.quantity)}</span>
+            <div key={`${item.product.id}-${item.sizeSystem ?? ""}-${item.selectedSize ?? ""}`} className="flex items-center justify-between gap-4 rounded-2xl bg-[#fbf7f2] px-4 py-3">
+              <div className="min-w-0">
+                <p>{item.product.name}{item.selectedSize ? ` (${item.sizeSystem ? `${item.sizeSystem} ` : ""}${item.selectedSize})` : ""} × {item.quantity}</p>
+                <ProductPrice product={item.product} className="font-semibold text-slate-900" showSavings />
+              </div>
+              <span className="font-semibold">{formatPrice(getProductPrice(item.product) * item.quantity)}</span>
             </div>
           ))}
         </div>
@@ -366,7 +411,8 @@ export default function CheckoutPage() {
         <div className="mt-6 rounded-[1.5rem] bg-[#fbf7f2] p-4 text-sm text-slate-600">
           Payment details and WhatsApp follow-up will be shown after the order is saved.
         </div>
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -51,11 +51,6 @@ export const categories: Array<{
     image: "/images/accessories-category.jpe",
   },
   {
-    label: "Makeup",
-    description: "Makeup essentials for eyes, lips and complexion.",
-    image: "/images/accessories-category.jpe",
-  },
-  {
     label: "Baby Care",
     description: "Gentle products for baby skin, bath time and comfort.",
     image: "https://images.unsplash.com/photo-1518200925927-aa63b1e57a84?auto=format&fit=crop&w=800&q=80",

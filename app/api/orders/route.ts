@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { initialSettings } from "@/app/lib/store-data";
+import { isWithinZambia } from "@/app/lib/zambia-boundary";
+import { calculatePriceCut, roundMoney } from "@/app/lib/price-cut";
 
 type OrderRequestItem = {
   product_id?: string;
@@ -61,13 +63,8 @@ export async function POST(request: Request) {
     !address ||
     address.length > 500 ||
     typeof latitude !== "number" ||
-    !Number.isFinite(latitude) ||
-    latitude < -18.1 ||
-    latitude > -8.2 ||
     typeof longitude !== "number" ||
-    !Number.isFinite(longitude) ||
-    longitude < 21.9 ||
-    longitude > 33.7 ||
+    !isWithinZambia(latitude, longitude) ||
     (email !== "" && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) ||
     !paymentReference ||
     paymentReference.length > 120 ||
@@ -133,7 +130,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "One or more items are no longer available." }, { status: 400 });
     }
 
-    const items: { product_id: string; product_name: string; quantity: number; price: number; selected_size?: string; size_system?: "EU" | "US" | "UK" }[] = [];
+    const { data: activePriceCuts, error: priceCutsError } = await supabase
+      .from("price_cuts")
+      .select("id,product_id,original_price,discount_percentage,is_active")
+      .in("product_id", productIds)
+      .eq("is_active", true);
+    if (priceCutsError) throw priceCutsError;
+    const priceCutByProduct = new Map((activePriceCuts ?? []).map((cut) => [cut.product_id, cut]));
+
+    const items: {
+      product_id: string;
+      product_name: string;
+      quantity: number;
+      price: number;
+      selected_size?: string;
+      size_system?: "EU" | "US" | "UK";
+      original_price?: number;
+      discount_percentage?: number;
+      discount_amount?: number;
+      price_cut_id?: string;
+    }[] = [];
     for (const requested of normalizedItems) {
       const product = productMap.get(requested.product_id)!;
       if (product.hidden) {
@@ -142,6 +158,36 @@ export async function POST(request: Request) {
       const totalRequested = quantitiesByProduct.get(requested.product_id) ?? requested.quantity;
       if (product.stock < totalRequested) {
         return NextResponse.json({ error: `Only ${product.stock} unit(s) of ${product.name} left in stock.` }, { status: 400 });
+      }
+      const priceCut = priceCutByProduct.get(product.id);
+      let chargedPrice = Number(product.price);
+      let priceSnapshot: {
+        original_price?: number;
+        discount_percentage?: number;
+        discount_amount?: number;
+        price_cut_id?: string;
+      } = {};
+      if (priceCut && Number(priceCut.discount_percentage) > 0) {
+        const originalPrice = Number(priceCut.original_price);
+        const discountPercentage = Number(priceCut.discount_percentage);
+        if (
+          !Number.isFinite(originalPrice) ||
+          originalPrice < 0 ||
+          !Number.isFinite(discountPercentage) ||
+          discountPercentage <= 0 ||
+          discountPercentage > 100
+        ) {
+          console.error("ORDER PRICE CUT VALIDATION ERROR:", { product_id: product.id });
+          return NextResponse.json({ error: `The discount for ${product.name} needs to be checked by the store.` }, { status: 409 });
+        }
+        const { discountAmount, salePrice } = calculatePriceCut(originalPrice, discountPercentage);
+        chargedPrice = salePrice;
+        priceSnapshot = {
+          original_price: roundMoney(originalPrice),
+          discount_percentage: discountPercentage,
+          discount_amount: discountAmount,
+          price_cut_id: priceCut.id,
+        };
       }
       const sizeOptions = product.size_options as { type?: unknown; system?: unknown; available?: unknown } | null;
       const selectedSize = requested.selected_size;
@@ -170,7 +216,8 @@ export async function POST(request: Request) {
           product_id: product.id,
           product_name: product.name,
           quantity: requested.quantity,
-          price: Number(product.price),
+          price: chargedPrice,
+          ...priceSnapshot,
           selected_size: selectedSize,
           size_system: sizeOptions.type === "footwear" ? selectedSystem as "EU" | "US" | "UK" : undefined,
         });
@@ -183,7 +230,8 @@ export async function POST(request: Request) {
         product_id: product.id,
         product_name: product.name,
         quantity: requested.quantity,
-        price: Number(product.price),
+        price: chargedPrice,
+        ...priceSnapshot,
       });
     }
 
@@ -220,6 +268,10 @@ export async function POST(request: Request) {
         order_id: order.id,
         selected_size: item.selected_size ?? null,
         size_system: item.size_system ?? null,
+        original_price: item.original_price ?? null,
+        discount_percentage: item.discount_percentage ?? null,
+        discount_amount: item.discount_amount ?? null,
+        price_cut_id: item.price_cut_id ?? null,
       })),
     );
     if (itemsError) throw itemsError;

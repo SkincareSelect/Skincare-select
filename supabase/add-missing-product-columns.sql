@@ -7,6 +7,7 @@
 -- via the Supabase JS client (Postgres would otherwise fold unquoted names to lowercase).
 
 alter table public.products
+  add column if not exists tag text not null default '',
   add column if not exists "ageGroup" text,
   add column if not exists "subcategory" text,
   add column if not exists "brand" text,
@@ -34,6 +35,9 @@ alter table public.products
   add column if not exists "hidden" boolean default false,
   add column if not exists "badge" text,
   add column if not exists "createdAt" timestamptz default now();
+
+alter table public.products
+  alter column tag set default '';
 
 -- Optional: backfill "image" from the legacy "image_url" column if you had
 -- products saved under the old schema, and mark them visible.

@@ -1,18 +1,4 @@
-alter table public.products
-  drop constraint if exists products_category_check;
-
-alter table public.products
-  add constraint products_category_check
-  check (category in (
-    'Face Care',
-    'Body Care',
-    'Hair Care',
-    'Men''s Grooming',
-    'Apparel and footwear',
-    'Fragrances',
-    'Makeup',
-    'Accessories',
-    'Baby Care'
-  ));
+-- Makeup was removed as a top-level category. This migration is kept as a
+-- no-op so older DBs do not reintroduce the category during a schema sync.
 
 notify pgrst, 'reload schema';

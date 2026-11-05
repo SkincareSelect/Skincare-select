@@ -1,6 +1,9 @@
-import type { Payment, Product, ProductCatalogueResult, Order, StoreSettings } from "@/app/lib/types";
+import type { FeaturedCampaignPost, Payment, Product, ProductCatalogueResult, Order, StoreSettings } from "@/app/lib/types";
+import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/app/lib/supabase/server";
 import { mapSupabaseProduct } from "@/app/lib/supabase/product-mapper";
+import { mapSupabaseSettings } from "@/app/lib/supabase/settings-mapper";
+import { applyPriceCuts, type PriceCutRecord } from "@/app/lib/price-cut";
 
 export async function fetchProductsFromSupabase(): Promise<ProductCatalogueResult> {
   const supabase = await createSupabaseServerClient();
@@ -20,7 +23,22 @@ export async function fetchProductsFromSupabase(): Promise<ProductCatalogueResul
     return { products: [], error: "The product catalogue is temporarily unavailable. Please try again later." };
   }
 
-  return { products: data.map((row) => mapSupabaseProduct(row)), error: null };
+  const { data: priceCuts, error: priceCutsError } = await supabase
+    .from("price_cuts")
+    .select("product_id,original_price,discount_percentage,discount_amount,sale_price,is_active")
+    .eq("is_active", true);
+  if (priceCutsError) {
+    console.error("PRICE CUT LOAD ERROR:", priceCutsError);
+    return { products: [], error: "Product prices are temporarily unavailable. Please try again later." };
+  }
+
+  return {
+    products: applyPriceCuts(
+      data.map((row) => mapSupabaseProduct(row)),
+      (priceCuts ?? []) as PriceCutRecord[],
+    ),
+    error: null,
+  };
 }
 
 export async function fetchOrdersFromSupabase() {
@@ -67,27 +85,38 @@ export async function fetchSettingsFromSupabase() {
     return null;
   }
 
-  const { data, error } = await supabase.from("store_settings").select("*").limit(1).single();
+  const { data, error } = await supabase.from("store_settings").select("*").limit(1).maybeSingle();
   if (error || !data) {
     return null;
   }
 
-  return data as StoreSettings;
+  return mapSupabaseSettings(data);
 }
 
 export async function fetchCampaignFromSupabase() {
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("FEATURED CAMPAIGN LOAD ERROR: Supabase server configuration is missing.");
     return null;
   }
 
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const { data, error } = await supabase
     .from("store_settings")
     .select("campaign_eyebrow, campaign_type, campaign_active, campaign_title, campaign_description, campaign_visual, campaign_image_url, campaign_footer, campaign_offer")
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    console.error("FEATURED CAMPAIGN LOAD ERROR:", error);
+    return null;
+  }
+
+  if (!data) {
+    console.error("FEATURED CAMPAIGN LOAD ERROR: Supabase returned no campaign settings.");
     return null;
   }
 
@@ -102,6 +131,45 @@ export async function fetchCampaignFromSupabase() {
     campaignFooter: data.campaign_footer,
     campaignOffer: data.campaign_offer,
   };
+}
+
+export async function fetchFeaturedCampaignPosts(): Promise<FeaturedCampaignPost[] | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("FEATURED CAMPAIGNS LOAD ERROR: Supabase server configuration is missing.");
+    return null;
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await supabase
+    .from("featured_campaigns")
+    .select("*")
+    .eq("is_active", true)
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("FEATURED CAMPAIGNS LOAD ERROR:", error);
+    return null;
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    eyebrow: row.eyebrow,
+    type: row.campaign_type,
+    active: row.is_active,
+    title: row.title,
+    description: row.description,
+    visual: row.visual,
+    imageUrl: row.image_url,
+    footer: row.footer,
+    offer: row.offer,
+    link: row.link,
+    position: row.position,
+  })) as FeaturedCampaignPost[];
 }
 
 export async function upsertProductToSupabase(product: Product) {

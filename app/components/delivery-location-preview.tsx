@@ -1,3 +1,5 @@
+import { isWithinZambia } from "@/app/lib/zambia-boundary";
+
 const DELIVERY_PIN_PATTERN =
   /(?:\nDelivery pin: )?(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)(?:\nhttps:\/\/www\.google\.com\/maps\?q=-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?)?/;
 
@@ -9,14 +11,7 @@ function parseDeliveryLocation(address: string) {
 
   const latitude = Number(match[1]);
   const longitude = Number(match[2]);
-  if (
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    latitude < -18.1 ||
-    latitude > -8.2 ||
-    longitude < 21.9 ||
-    longitude > 33.7
-  ) {
+  if (!isWithinZambia(latitude, longitude)) {
     return null;
   }
 

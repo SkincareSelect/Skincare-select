@@ -18,11 +18,12 @@ function stringArray(value: unknown) {
 
 export function mapSupabaseProduct(row: Record<string, unknown>): Product {
   const sizeOptions = row.size_options;
+  const categoryValue = String(row.category ?? "Face Care").trim();
   return {
     id: String(row.id),
     name: String(row.name ?? ""),
     slug: String(row.slug ?? ""),
-    category: String(row.category ?? "Face Care") as ProductCategory,
+    category: (categoryValue.toLowerCase() === "makeup" ? "Accessories" : categoryValue) as ProductCategory,
     brand: optionalString(row.brand),
     price: Number(row.price ?? 0),
     originalPrice: optionalNumber(row.originalPrice ?? row.original_price),

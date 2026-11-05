@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { categories } from "@/app/lib/store-data";
-import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-server";
+import { fetchFeaturedCampaignPosts, fetchProductsFromSupabase } from "@/app/lib/supabase/data-server";
 import { fetchCampaignFromSupabase } from "@/app/lib/supabase/data-server";
 import { ProductSection } from "@/app/components/product-section";
 import { ProductCarousel } from "@/app/components/product-carousel";
 import { ProductThumb } from "@/app/components/product-thumb";
+import { ProductPrice } from "@/app/components/product-price";
 import { FeaturedCampaign } from "@/app/components/featured-campaign";
 import { SectionLink } from "@/app/components/section-link";
 
@@ -16,7 +17,28 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const { products: catalogue, error: catalogueError } = await fetchProductsFromSupabase();
-  const campaign = await fetchCampaignFromSupabase();
+  const featuredPosts = await fetchFeaturedCampaignPosts();
+  const legacyCampaign = featuredPosts === null ? await fetchCampaignFromSupabase() : null;
+  const campaignPosts =
+    featuredPosts ??
+    (legacyCampaign
+      ? [
+          {
+            id: "legacy-featured-campaign",
+            eyebrow: legacyCampaign.campaignEyebrow,
+            type: legacyCampaign.campaignType,
+            active: legacyCampaign.campaignActive,
+            title: legacyCampaign.campaignTitle,
+            description: legacyCampaign.campaignDescription,
+            visual: legacyCampaign.campaignVisual,
+            imageUrl: legacyCampaign.campaignImageUrl ?? "",
+            footer: legacyCampaign.campaignFooter,
+            offer: legacyCampaign.campaignOffer,
+            link: "",
+            position: 0,
+          },
+        ]
+      : []);
   const featuredProducts = catalogue.filter((product) => product.featured).slice(0, 6);
   const newArrivals = catalogue.filter((product) => product.newArrival).slice(0, 4);
   const bestSellers = catalogue.filter((product) => product.bestSeller).slice(0, 4);
@@ -56,7 +78,7 @@ export default async function HomePage() {
           </div>
 
           <div className="rounded-[2.25rem] bg-[radial-gradient(circle_at_top,_#f7ece5,_#fff_70%)] p-6 sm:p-8">
-            <FeaturedCampaign initialCampaign={campaign} />
+            <FeaturedCampaign campaigns={campaignPosts} />
           </div>
         </div>
       </section>
@@ -127,7 +149,7 @@ export default async function HomePage() {
               <h3 className="mt-1 text-lg font-semibold text-slate-900">{product.name}</h3>
               <p className="mt-2 text-sm text-slate-600">{product.shortDescription}</p>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-lg font-semibold text-slate-900">K{product.price.toFixed(2)}</span>
+                <ProductPrice product={product} className="text-lg font-semibold text-slate-900" showSavings />
                 <Link href={`/shop/${product.slug}`} className="text-sm font-medium text-[#8d6e63]">
                   View
                 </Link>
@@ -152,7 +174,7 @@ export default async function HomePage() {
               <h3 className="mt-1 text-lg font-semibold text-slate-900">{product.name}</h3>
               <p className="mt-2 text-sm text-slate-600">{product.shortDescription}</p>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-lg font-semibold text-slate-900">K{product.price.toFixed(2)}</span>
+                <ProductPrice product={product} className="text-lg font-semibold text-slate-900" showSavings />
                 <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">Top pick</span>
               </div>
             </article>
@@ -187,7 +209,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/shop"
-            className="mt-6 inline-flex rounded-full bg-[#2f241f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1f1713]"
+            className="mt-6 inline-flex rounded-full bg-[#d9b8a7] px-5 py-3 text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89]"
           >
             Browse offers
           </Link>

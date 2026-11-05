@@ -23,6 +23,7 @@ update public.products set category = 'Hair Care' where category = 'Hair';
 update public.products set category = 'Fragrances' where category = 'Arabic Perfumes';
 update public.products set category = 'Face Care' where category = 'Korean Skincare';
 update public.products set category = 'Apparel and footwear' where category = 'Footwear and Clothes';
+update public.products set category = 'Accessories' where lower(category) = 'makeup';
 
 alter table public.products
   add constraint products_category_check
@@ -33,7 +34,6 @@ alter table public.products
     'Men''s Grooming',
     'Apparel and footwear',
     'Fragrances',
-    'Makeup',
     'Accessories',
     'Baby Care'
   ));

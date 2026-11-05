@@ -102,7 +102,6 @@ create table if not exists public.products (
   image text not null,
   images jsonb not null default '[]'::jsonb,
   size_options jsonb,
-  size_options jsonb,
   featured boolean not null default false,
   hidden boolean not null default false,
   skin_type text,
@@ -111,6 +110,23 @@ create table if not exists public.products (
   discount numeric(5,2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.price_cuts (
+  id uuid primary key default uuid_generate_v4(),
+  product_id uuid not null unique references public.products(id) on delete cascade,
+  original_price numeric(12, 2) not null check (original_price >= 0),
+  discount_percentage numeric(5, 2) not null check (discount_percentage >= 0 and discount_percentage <= 100),
+  discount_amount numeric(12, 2) not null check (discount_amount >= 0),
+  sale_price numeric(12, 2) not null check (sale_price >= 0),
+  is_active boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint active_price_cut_requires_discount check (not is_active or discount_percentage > 0),
+  constraint price_cut_amount_matches_percentage
+    check (discount_amount = round(original_price * discount_percentage / 100, 2)),
+  constraint price_cut_sale_matches_amount
+    check (sale_price = original_price - discount_amount)
 );
 
 create table if not exists public.inventory (
@@ -183,8 +199,10 @@ create table if not exists public.order_items (
   price numeric(10,2) not null,
   selected_size text,
   size_system text check (size_system is null or size_system in ('EU', 'US', 'UK')),
-  selected_size text,
-  size_system text check (size_system is null or size_system in ('EU', 'US', 'UK')),
+  original_price numeric(12, 2),
+  discount_percentage numeric(5, 2),
+  discount_amount numeric(12, 2),
+  price_cut_id uuid references public.price_cuts(id) on delete set null,
   created_at timestamptz not null default now()
 );
 

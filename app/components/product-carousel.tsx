@@ -5,10 +5,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
-
-function formatPrice(value: number) {
-  return `K${value.toFixed(2)}`;
-}
+import { ProductPrice } from "@/app/components/product-price";
 
 export function ProductCarousel({ products }: { products: Product[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -73,7 +70,7 @@ export function ProductCarousel({ products }: { products: Product[] }) {
           <h2 className="mt-2 text-3xl font-semibold text-slate-900">{product.name}</h2>
           <p className="mt-3 max-w-xl leading-7 text-slate-600">{product.shortDescription}</p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <span className="text-2xl font-semibold text-slate-900">{formatPrice(product.price)}</span>
+            <ProductPrice product={product} className="text-2xl font-semibold text-slate-900" showSavings />
             {product.badge ? <span className="rounded-full bg-[#f7e9e2] px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-[#5c4034]">{product.badge}</span> : null}
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-3">

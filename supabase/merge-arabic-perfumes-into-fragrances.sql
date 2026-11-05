@@ -24,7 +24,6 @@ alter table public.products
     'Body Care',
     'Hair Care',
     'Men''s Grooming',
-    'Makeup',
     'Fragrances',
     'Korean Skincare',
     'Accessories',

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCart } from "@/app/components/cart-provider";
 import { getSettings } from "@/app/lib/store-data";
 import { ProductThumb } from "@/app/components/product-thumb";
+import { ProductPrice } from "@/app/components/product-price";
 
 function formatPrice(value: number) {
   return `K${value.toFixed(2)}`;
@@ -41,7 +42,7 @@ export default function CartPage() {
                   <div>
                     <p className="font-semibold text-slate-900">{item.product.name}</p>
                     {item.selectedSize ? <p className="text-sm text-slate-600">Size: {item.sizeSystem ? `${item.sizeSystem} ` : ""}{item.selectedSize}</p> : null}
-                    <p className="text-sm text-slate-500">{formatPrice(item.product.price)} each</p>
+                    <div className="text-sm text-slate-500"><ProductPrice product={item.product} className="font-semibold text-slate-900" showSavings /> <span>each</span></div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { CartItem, Product } from "@/app/lib/types";
+import { getProductPrice } from "@/app/lib/price-cut";
+import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
 
 type CartContextValue = {
   items: CartItem[];
@@ -18,41 +20,54 @@ const STORAGE_KEY = "skincare-select-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(stored) as CartItem[];
-      if (Array.isArray(parsed)) {
-        const validItems = parsed.filter(
-          (item) =>
-            item &&
-            item.product &&
-            typeof item.product.id === "string" &&
-            Number.isInteger(item.quantity) &&
-            item.quantity > 0 &&
-            item.product.stock > 0,
-        ).map((item) => ({
-          ...item,
-          quantity: Math.min(item.quantity, item.product.stock),
-        }));
-        window.setTimeout(() => setItems(validItems), 0);
+    let cancelled = false;
+    const hydrate = async () => {
+      await Promise.resolve();
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as CartItem[];
+          if (Array.isArray(parsed)) {
+            const validItems = parsed.filter(
+              (item) =>
+                item &&
+                item.product &&
+                typeof item.product.id === "string" &&
+                Number.isInteger(item.quantity) &&
+                item.quantity > 0 &&
+                item.product.stock > 0 &&
+                (!item.product.sizeOptions ||
+                  (typeof item.selectedSize === "string" &&
+                    item.product.sizeOptions.available.includes(item.selectedSize) &&
+                    (item.product.sizeOptions.type !== "footwear" ||
+                      item.sizeSystem === item.product.sizeOptions.system))),
+            ).map((item) => ({
+              ...item,
+              quantity: Math.min(item.quantity, item.product.stock),
+            }));
+            if (!cancelled) setItems(validItems);
+          }
+        } catch {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
+      if (!cancelled) setHydrated(true);
+    };
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !hydrated) {
       return;
     }
 
@@ -61,7 +76,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } else {
       window.localStorage.removeItem(STORAGE_KEY);
     }
-  }, [items]);
+  }, [hydrated, items]);
+
+  useEffect(() => {
+    if (!hydrated || items.length === 0) return;
+    let cancelled = false;
+    void fetchProductsFromSupabase()
+      .then((result) => {
+        if (result.error) {
+          console.error("CART PRICE REFRESH ERROR:", result.error);
+          return;
+        }
+        if (cancelled) return;
+        const productsById = new Map(result.products.map((product) => [product.id, product]));
+        setItems((currentItems) => currentItems.map((item) => ({
+          ...item,
+          product: productsById.get(item.product.id) ?? item.product,
+        })));
+      })
+      .catch((error: unknown) => {
+        console.error("CART PRICE REFRESH ERROR:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, items.length]);
 
   const addItem = useCallback((product: Product, selectedSize?: string, sizeSystem?: "EU" | "US" | "UK") => {
     setItems((currentItems) => {
@@ -110,7 +149,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const itemCount = useMemo(() => items.reduce((count, item) => count + item.quantity, 0), [items]);
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.product.price * item.quantity, 0), [items]);
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + getProductPrice(item.product) * item.quantity, 0), [items]);
 
   const value = useMemo<CartContextValue>(
     () => ({ items, itemCount, subtotal, addItem, updateQuantity, removeItem, clearCart }),

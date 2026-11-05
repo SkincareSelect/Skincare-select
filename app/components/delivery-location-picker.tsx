@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import L, { type LatLngExpression } from "leaflet";
+import L from "leaflet";
+import { isWithinZambia, ZAMBIA_BOUNDS } from "@/app/lib/zambia-boundary";
 
 export type DeliveryLocation = {
   latitude: number;
@@ -10,12 +11,10 @@ export type DeliveryLocation = {
   label?: string;
 };
 
-const LUSAKA_CENTER: LatLngExpression = [-15.4167, 28.2833];
-const ZAMBIA_BOUNDS: L.LatLngBoundsExpression = [[-18.1, 21.9], [-8.2, 33.7]];
-
-function isWithinZambia(latitude: number, longitude: number) {
-  return latitude >= -18.1 && latitude <= -8.2 && longitude >= 21.9 && longitude <= 33.7;
-}
+const MAP_BOUNDS: L.LatLngBoundsExpression = [
+  [ZAMBIA_BOUNDS.south, ZAMBIA_BOUNDS.west],
+  [ZAMBIA_BOUNDS.north, ZAMBIA_BOUNDS.east],
+];
 
 const pinIcon = L.divIcon({
   className: "delivery-map-pin",
@@ -24,13 +23,23 @@ const pinIcon = L.divIcon({
   iconAnchor: [14, 34],
 });
 
-function MapClickHandler({ onSelect }: { onSelect: (location: DeliveryLocation) => void }) {
+function MapClickHandler({
+  onSelect,
+  onInvalid,
+}: {
+  onSelect: (location: DeliveryLocation) => void;
+  onInvalid: () => void;
+}) {
   useMapEvents({
     click(event) {
-      onSelect({
-        latitude: event.latlng.lat,
-        longitude: event.latlng.lng,
-      });
+      if (isWithinZambia(event.latlng.lat, event.latlng.lng)) {
+        onSelect({
+          latitude: event.latlng.lat,
+          longitude: event.latlng.lng,
+        });
+      } else {
+        onInvalid();
+      }
     },
   });
   return null;
@@ -44,6 +53,16 @@ function RecenterMap({ location }: { location: DeliveryLocation | null }) {
       map.flyTo([location.latitude, location.longitude], Math.max(map.getZoom(), 15));
     }
   }, [location, map]);
+
+  return null;
+}
+
+function FitZambiaBounds() {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(MAP_BOUNDS, { padding: [12, 12] });
+  }, [map]);
 
   return null;
 }
@@ -83,7 +102,12 @@ export function DeliveryLocationPicker({
         format: "jsonv2",
         limit: "1",
         countrycodes: "zm",
-        viewbox: "28.0,-15.75,28.6,-15.1",
+        viewbox: [
+          ZAMBIA_BOUNDS.west,
+          ZAMBIA_BOUNDS.north,
+          ZAMBIA_BOUNDS.east,
+          ZAMBIA_BOUNDS.south,
+        ].join(","),
       });
       const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
       if (!response.ok) {
@@ -156,7 +180,7 @@ export function DeliveryLocationPicker({
       <div>
         <h2 className="font-semibold text-slate-900">Pin your delivery location</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Search for a Lusaka area or landmark, use your current location, or tap the map and move the pin to your exact delivery point.
+          Search for a Zambian area or landmark, use your current location, or tap the map and move the pin to your exact delivery point.
         </p>
       </div>
 
@@ -179,11 +203,11 @@ export function DeliveryLocationPicker({
 
       <div className="h-72 overflow-hidden rounded-2xl border border-[#eadfce]" aria-label="Interactive delivery location map">
         <MapContainer
-          center={LUSAKA_CENTER}
-          zoom={12}
-          minZoom={6}
+          center={[-13.2, 27.8]}
+          zoom={5}
+          minZoom={5}
           maxZoom={19}
-          maxBounds={ZAMBIA_BOUNDS}
+          maxBounds={MAP_BOUNDS}
           maxBoundsViscosity={1}
           className="h-full w-full"
           scrollWheelZoom
@@ -193,7 +217,14 @@ export function DeliveryLocationPicker({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
-          <MapClickHandler onSelect={onChange} />
+          <FitZambiaBounds />
+          <MapClickHandler
+            onSelect={(nextLocation) => {
+              setMessage("");
+              onChange(nextLocation);
+            }}
+            onInvalid={() => setMessage("Choose a point inside Zambia's borders.")}
+          />
           <RecenterMap location={location} />
           {location ? (
             <Marker
@@ -203,7 +234,13 @@ export function DeliveryLocationPicker({
               eventHandlers={{
                 dragend(event) {
                   const point = event.target.getLatLng();
-                  onChange({ latitude: point.lat, longitude: point.lng });
+                  if (isWithinZambia(point.lat, point.lng)) {
+                    setMessage("");
+                    onChange({ latitude: point.lat, longitude: point.lng });
+                  } else {
+                    event.target.setLatLng([location.latitude, location.longitude]);
+                    setMessage("Choose a point inside Zambia's borders.");
+                  }
                 },
               }}
             />

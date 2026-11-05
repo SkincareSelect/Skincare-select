@@ -6,10 +6,8 @@ import { useCart } from "@/app/components/cart-provider";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
-
-function formatPrice(value: number) {
-  return `K${value.toFixed(2)}`;
-}
+import { ProductPrice } from "@/app/components/product-price";
+import { getProductPrice } from "@/app/lib/price-cut";
 
 export default function DealsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -36,10 +34,15 @@ export default function DealsPage() {
 
   const deals = useMemo(() => {
     return products
-      .filter((product) => !product.hidden && product.originalPrice && product.originalPrice > product.price)
+      .filter((product) => !product.hidden && (
+        Boolean(product.priceCut) ||
+        Boolean(product.originalPrice && product.originalPrice > product.price)
+      ))
       .sort((a, b) => {
-        const discountA = ((a.originalPrice ?? a.price) - a.price) / (a.originalPrice ?? a.price);
-        const discountB = ((b.originalPrice ?? b.price) - b.price) / (b.originalPrice ?? b.price);
+        const originalA = a.priceCut?.originalPrice ?? a.originalPrice ?? a.price;
+        const originalB = b.priceCut?.originalPrice ?? b.originalPrice ?? b.price;
+        const discountA = (originalA - getProductPrice(a)) / originalA;
+        const discountB = (originalB - getProductPrice(b)) / originalB;
         return discountB - discountA;
       });
   }, [products]);
@@ -69,8 +72,8 @@ export default function DealsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {deals.map((product) => {
-            const originalPrice = product.originalPrice ?? product.price;
-            const percentOff = Math.round(((originalPrice - product.price) / originalPrice) * 100);
+            const originalPrice = product.priceCut?.originalPrice ?? product.originalPrice ?? product.price;
+            const percentOff = product.priceCut?.discountPercentage ?? Math.round(((originalPrice - product.price) / originalPrice) * 100);
 
             return (
               <article key={product.id} className="flex flex-col rounded-[2rem] border border-[#eadfce] bg-white p-5 shadow-sm">
@@ -82,10 +85,7 @@ export default function DealsPage() {
                 </div>
                 <p className="mt-4 text-sm font-medium text-slate-500">{product.brand ?? "Zhurie & Co"}</p>
                 <h3 className="mt-1 text-lg font-semibold text-slate-900">{product.name}</h3>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-base font-semibold text-slate-900">{formatPrice(product.price)}</span>
-                  <span className="text-sm text-slate-400 line-through">{formatPrice(originalPrice)}</span>
-                </div>
+                <div className="mt-3"><ProductPrice product={product} className="text-base font-semibold text-slate-900" showSavings /></div>
                 <div className="mt-4 flex items-center gap-2">
                   {product.sizeOptions ? (
                     <Link

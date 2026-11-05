@@ -22,12 +22,21 @@ export const metadata: Metadata = {
   title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
   description:
     "Premium skincare, beauty, grooming, fragrance and personal-care products for women, men and families across Zambia.",
+  icons: {
+    icon: [
+      { url: "/zhurie-co-avatar.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", type: "image/x-icon" },
+    ],
+    shortcut: [{ url: "/zhurie-co-avatar.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/zhurie-co-avatar.png", type: "image/png", sizes: "512x512" }],
+  },
   openGraph: {
     type: "website",
     siteName: "Zhurie & Co",
     title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
     description:
       "Discover carefully selected skincare, beauty and personal-care products for every member of the family.",
+    images: [{ url: "/zhurie-co-avatar.png", width: 512, height: 512, alt: "Zhurie & Co logo" }],
     url: "https://zhurieandco.shop/",
     locale: "en_ZM",
   },
@@ -36,6 +45,7 @@ export const metadata: Metadata = {
     title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
     description:
       "Discover carefully selected skincare, beauty and personal-care products for every member of the family.",
+    images: ["/zhurie-co-avatar.png"],
   },
 };
 

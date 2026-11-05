@@ -5,7 +5,6 @@ export type ProductCategory =
   | "Men's Grooming"
   | "Apparel and footwear"
   | "Fragrances"
-  | "Makeup"
   | "Accessories"
   | "Baby Care";
 
@@ -58,6 +57,12 @@ export interface Product {
   suitableFor?: string[];
   tags?: string[];
   price: number;
+  priceCut?: {
+    originalPrice: number;
+    discountPercentage: number;
+    discountAmount: number;
+    salePrice: number;
+  };
   originalPrice?: number;
   discount?: number;
   stock: number;
@@ -160,7 +165,7 @@ export interface StoreSettings {
   currency?: string;
   businessHours: string;
   campaignEyebrow: string;
-  campaignType: "Promotion" | "Awareness day" | "Seasonal theme" | "Announcement";
+  campaignType: "New product" | "Promotion" | "Awareness day" | "Seasonal theme" | "Announcement";
   campaignActive: boolean;
   campaignTitle: string;
   campaignDescription: string;
@@ -173,6 +178,21 @@ export interface StoreSettings {
     facebook: string;
     tiktok: string;
   };
+}
+
+export interface FeaturedCampaignPost {
+  id: string;
+  eyebrow: string;
+  type: StoreSettings["campaignType"];
+  active: boolean;
+  title: string;
+  description: string;
+  visual: string;
+  imageUrl?: string;
+  footer: string;
+  offer: string;
+  link?: string;
+  position: number;
 }
 
 export interface AuthUser {

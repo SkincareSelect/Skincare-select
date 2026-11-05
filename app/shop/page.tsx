@@ -6,12 +6,10 @@ import { Search } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { categories } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
+import { matchesProductSearch } from "@/app/lib/product-search";
 import type { Product, ProductCategory } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
-
-function formatPrice(value: number) {
-  return `K${value.toFixed(2)}`;
-}
+import { ProductPrice } from "@/app/components/product-price";
 
 const arabicPerfumeFilters = [
   "Men",
@@ -73,6 +71,7 @@ const koreanSkinTypeFilters = ["All Skin Types", "Oily", "Dry", "Combination", "
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [catalogueError, setCatalogueError] = useState<string | null>(null);
   const [category, setCategory] = useState<ProductCategory | "All">("All");
   const [query, setQuery] = useState("");
@@ -80,14 +79,24 @@ export default function ShopPage() {
   const { addItem } = useCart();
 
   useEffect(() => {
+    let cancelled = false;
+
     void fetchProductsFromSupabase().then((nextProducts) => {
+      if (cancelled) return;
       setProducts(nextProducts.products);
       setCatalogueError(nextProducts.error);
     }).catch((error: unknown) => {
+      if (cancelled) return;
       console.error("SHOP PRODUCT LOAD ERROR:", error);
       setProducts([]);
       setCatalogueError("The product catalogue is temporarily unavailable. Please try again later.");
+    }).finally(() => {
+      if (!cancelled) setIsLoading(false);
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -133,8 +142,7 @@ export default function ShopPage() {
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesCategory = category === "All" || normalizeCategory(product.category) === category;
-      const searchText = `${product.name} ${product.brand ?? ""} ${product.description} ${product.productType ?? ""}`.toLowerCase();
-      const matchesQuery = searchText.includes(query.toLowerCase());
+      const matchesQuery = matchesProductSearch(product, query);
       const matchesFilters =
         activeFilters.length === 0 ||
         activeFilters.every((filter) =>
@@ -158,8 +166,10 @@ export default function ShopPage() {
             <p className="mt-3 max-w-2xl text-slate-600">
               Search by name, brand, category or product type to find the right skincare, beauty or grooming essential.
             </p>
-            <p className="mt-4 text-sm text-slate-500">
-              Showing {filteredProducts.length} product{filteredProducts.length === 1 ? "" : "s"}.
+            <p className="mt-4 text-sm text-slate-500" aria-live="polite">
+              {isLoading
+                ? "Loading products..."
+                : `Showing ${filteredProducts.length} product${filteredProducts.length === 1 ? "" : "s"}.`}
             </p>
           </div>
           <div className="w-full max-w-md">
@@ -167,6 +177,8 @@ export default function ShopPage() {
             <div className="relative">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
+                type="search"
+                aria-label="Search products"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Try cleanser, perfume, beard oil or baby lotion"
@@ -272,7 +284,11 @@ export default function ShopPage() {
       ) : null}
 
       <div id="products" className="scroll-mt-28 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {filteredProducts.length > 0 ? (
+        {isLoading ? (
+          <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm" role="status">
+            Loading products...
+          </div>
+        ) : filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <article
               key={product.id}
@@ -301,10 +317,7 @@ export default function ShopPage() {
                 <span>{product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}</span>
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-lg font-semibold text-slate-900">{formatPrice(product.price)}</p>
-                  {product.originalPrice ? <p className="text-sm text-slate-400 line-through">{formatPrice(product.originalPrice)}</p> : null}
-                </div>
+                <ProductPrice product={product} className="text-lg font-semibold text-slate-900" showSavings />
                 <div className="flex gap-2">
                   <Link
                     href={`/shop/${product.slug}`}

@@ -92,6 +92,10 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
     setMenuOpen(false);
   };
 
+  if (pathname === "/admin/beauty-finder") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fffdfb_0%,#fbf7f2_45%,#f7f1ea_100%)] text-slate-900">
       <header className="sticky top-0 z-50 border-b border-[#eadfce] bg-white/90 backdrop-blur">
@@ -124,7 +128,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/shop"
+              href="/search"
               className="hidden items-center gap-2 rounded-full border border-[#eadfce] bg-[#fbf7f2] px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#d8c1b1] hover:text-[#2f241f] sm:inline-flex"
             >
               <Search size={16} />
@@ -174,7 +178,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   {link.label}
                 </Link>
               ))}
-              <Link href="/shop" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
+              <Link href="/search" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">
                 Search
               </Link>
               <Link href="/account" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#fbf7f2] hover:text-[#2f241f]">

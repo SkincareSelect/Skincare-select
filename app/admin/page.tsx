@@ -8,7 +8,7 @@ import { DeliveryLocationPreview } from "@/app/components/delivery-location-prev
 import { categories, getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
 import { uploadCampaignImage, uploadProductImage } from "@/app/lib/supabase/client";
 import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
-import type { Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
+import type { FeaturedCampaignPost, Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
 
 const statusOptions: OrderStatus[] = ["Payment Pending", "Payment Confirmed", "Processing", "Ready for Delivery", "Ready for Dispatch", "Dispatched", "Delivered", "Cancelled"];
 
@@ -80,6 +80,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>(getOrders);
   const [payments, setPayments] = useState<Payment[]>(getPayments);
   const [settings, setSettings] = useState<StoreSettings>(getSettings());
+  const [campaignPosts, setCampaignPosts] = useState<FeaturedCampaignPost[]>([]);
   const [draftProduct, setDraftProduct] = useState<Partial<Product>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -307,6 +308,31 @@ export default function AdminPage() {
     })();
   }, [loading, user?.role]);
 
+  useEffect(() => {
+    if (loading || user?.role !== "admin") {
+      return;
+    }
+
+    let cancelled = false;
+    void fetch("/api/admin/campaigns", { cache: "no-store" })
+      .then(async (response) => {
+        const result = (await response.json()) as { campaigns?: FeaturedCampaignPost[]; error?: string };
+        if (!response.ok) {
+          throw new Error(result.error ?? "Featured posts could not be loaded.");
+        }
+        if (!cancelled) setCampaignPosts(result.campaigns ?? []);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error("FEATURED CAMPAIGNS LOAD ERROR:", error);
+        setFeedback(error instanceof Error ? error.message : "Featured posts could not be loaded.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, user?.role]);
+
   const canManage = useMemo(() => user?.role === "admin", [user]);
 
   if (loading) {
@@ -394,14 +420,82 @@ export default function AdminPage() {
     void upsertOrderToSupabase(nextOrders.find((order) => order.id === id) as Order);
   };
 
+  const updateCampaignPost = (id: string, updates: Partial<FeaturedCampaignPost>) => {
+    setCampaignPosts((current) => current.map((post) => post.id === id ? { ...post, ...updates } : post));
+  };
+
+  const addCampaignPost = () => {
+    setCampaignPosts((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        eyebrow: "Featured",
+        type: "Announcement",
+        active: true,
+        title: "",
+        description: "",
+        visual: "✨",
+        imageUrl: "",
+        footer: "",
+        offer: "",
+        link: "",
+        position: current.length,
+      },
+    ]);
+  };
+
+  const removeCampaignPost = (id: string) => {
+    setCampaignPosts((current) =>
+      current.filter((post) => post.id !== id).map((post, position) => ({ ...post, position })),
+    );
+  };
+
+  const moveCampaignPost = (id: string, direction: -1 | 1) => {
+    setCampaignPosts((current) => {
+      const source = current.findIndex((post) => post.id === id);
+      const destination = source + direction;
+      if (source < 0 || destination < 0 || destination >= current.length) return current;
+      const reordered = [...current];
+      [reordered[source], reordered[destination]] = [reordered[destination], reordered[source]];
+      return reordered.map((post, position) => ({ ...post, position }));
+    });
+  };
+
+  const saveCampaignPosts = async () => {
+    try {
+      const response = await fetch("/api/admin/campaigns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaigns: campaignPosts }),
+      });
+      const result = (await response.json()) as { campaigns?: FeaturedCampaignPost[]; error?: string };
+      if (!response.ok) {
+        setFeedback(result.error ?? "Featured posts could not be saved.");
+        return;
+      }
+      setCampaignPosts(result.campaigns ?? []);
+      setFeedback("Featured posts saved.");
+    } catch (error) {
+      console.error("FEATURED CAMPAIGNS SAVE ERROR:", error);
+      setFeedback("Featured posts could not be saved. Check your connection and try again.");
+    }
+  };
+
   const saveStoreSettings = async () => {
     saveSettings(settings);
-    const result = await upsertSettingsToSupabase(settings);
-    if (result.error) {
-      setFeedback("Store settings saved locally, but Supabase update failed.");
-      return;
+    try {
+      const result = await upsertSettingsToSupabase(settings);
+      if (result.error) {
+        console.error("STORE SETTINGS SUPABASE SAVE ERROR:", result.error);
+        setFeedback(`Store settings saved locally, but Supabase update failed: ${result.error.message}`);
+        return;
+      }
+      setFeedback("Store settings saved locally and to Supabase.");
+    } catch (error) {
+      console.error("STORE SETTINGS SUPABASE SAVE ERROR:", error);
+      const message = error instanceof Error ? ` ${error.message}` : "";
+      setFeedback(`Store settings saved locally, but Supabase could not be reached.${message}`);
     }
-    setFeedback("Store settings saved.");
   };
 
   const exportFilteredOrders = () => {
@@ -516,7 +610,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleCampaignImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCampaignImageUpload = async (campaignId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -527,8 +621,8 @@ export default function AdminPage() {
     setUploadingCampaignImage(false);
 
     if (publicUrl) {
-      setSettings((current) => ({ ...current, campaignImageUrl: publicUrl }));
-      setFeedback("Campaign image uploaded. Save settings to publish it.");
+      setCampaignPosts((current) => current.map((post) => post.id === campaignId ? { ...post, imageUrl: publicUrl } : post));
+      setFeedback("Campaign image uploaded. Save featured posts to publish it.");
     } else {
       setFeedback("Campaign image upload is unavailable without Supabase storage configuration.");
     }
@@ -543,7 +637,21 @@ export default function AdminPage() {
             <p className="mt-3 font-serif text-2xl font-semibold italic tracking-wide text-[#8d6e63]">Welcome, Mr Kondowe</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">Manage products, orders, and payments</h1>
           </div>
-          <Link href="/" className="text-sm font-medium text-violet-600">View storefront</Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/admin/beauty-finder"
+              className="rounded-full bg-[#2f241f] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f1713]"
+            >
+              Open AI Beauty Finder
+            </Link>
+            <Link
+              href="/admin/price-cuts"
+              className="rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
+            >
+              Price Cuts / Discounts
+            </Link>
+            <Link href="/" className="text-sm font-medium text-violet-600">View storefront</Link>
+          </div>
         </div>
       </section>
 
@@ -586,45 +694,66 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-violet-200 bg-violet-50 p-6 shadow-sm sm:p-8">
+      <section id="featured-posts" className="rounded-3xl border border-violet-200 bg-violet-50 p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-violet-600">Marketing</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-900">Featured campaign</h2>
-            <p className="mt-1 text-sm text-slate-600">Create an awareness day, seasonal theme, promotion, or announcement.</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-900">Featured posts</h2>
+            <p className="mt-1 text-sm text-slate-600">Publish new products, discounts, awareness campaigns, seasonal themes, and community announcements.</p>
           </div>
-          <button onClick={saveStoreSettings} className="rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white">Save campaign</button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={addCampaignPost} className="rounded-full border border-violet-300 bg-white px-5 py-2.5 text-sm font-semibold text-violet-700">Add post</button>
+            <button onClick={saveCampaignPosts} className="rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white">Save posts</button>
+          </div>
         </div>
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <select value={settings.campaignType} onChange={(event) => setSettings((current) => ({ ...current, campaignType: event.target.value as StoreSettings["campaignType"] }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                <option>Promotion</option><option>Awareness day</option><option>Seasonal theme</option><option>Announcement</option>
-              </select>
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"><input type="checkbox" checked={settings.campaignActive} onChange={(event) => setSettings((current) => ({ ...current, campaignActive: event.target.checked }))} />Show on homepage</label>
-            </div>
-            <input value={settings.campaignEyebrow} onChange={(event) => setSettings((current) => ({ ...current, campaignEyebrow: event.target.value }))} placeholder="Campaign label" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-            <input value={settings.campaignTitle} onChange={(event) => setSettings((current) => ({ ...current, campaignTitle: event.target.value }))} placeholder="Campaign title" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-            <textarea value={settings.campaignDescription} onChange={(event) => setSettings((current) => ({ ...current, campaignDescription: event.target.value }))} placeholder="Campaign description" rows={3} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-            <label className="block text-sm font-medium text-slate-700">Campaign picture<input type="file" accept="image/*" onChange={handleCampaignImageUpload} className="mt-2 w-full rounded-2xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm" /></label>
-            {uploadingCampaignImage ? <p className="text-sm text-slate-500">Uploading campaign picture...</p> : null}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <input value={settings.campaignOffer} onChange={(event) => setSettings((current) => ({ ...current, campaignOffer: event.target.value }))} placeholder="Offer text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-              <input value={settings.campaignFooter} onChange={(event) => setSettings((current) => ({ ...current, campaignFooter: event.target.value }))} placeholder="Footer text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-            </div>
-          </div>
-          <div className="rounded-3xl border border-white bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Live preview</p>
-            <div className="mt-3 rounded-2xl bg-[#fbf7f2] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">{settings.campaignEyebrow} · {settings.campaignType}</p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">{settings.campaignTitle || "Campaign title"}</p>
-              <p className="mt-2 text-sm text-slate-600">{settings.campaignDescription || "Campaign description"}</p>
-              <div className="mt-4 flex h-32 items-center justify-center overflow-hidden rounded-2xl bg-white text-6xl">
-                {settings.campaignImageUrl ? <div aria-label="Campaign picture preview" role="img" className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${settings.campaignImageUrl}")` }} /> : settings.campaignVisual}
+        <div className="mt-6 space-y-5">
+          {campaignPosts.length === 0 ? (
+            <p className="rounded-2xl border border-violet-100 bg-white p-5 text-sm text-slate-600">No featured posts yet. Add a post to get started.</p>
+          ) : campaignPosts.map((post, index) => (
+            <article key={post.id} className="rounded-3xl border border-violet-100 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="font-semibold text-slate-900">Post {index + 1}: {post.title || "Untitled"}</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => moveCampaignPost(post.id, -1)} disabled={index === 0} aria-label={`Move post ${index + 1} up`} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40">Move up</button>
+                  <button type="button" onClick={() => moveCampaignPost(post.id, 1)} disabled={index === campaignPosts.length - 1} aria-label={`Move post ${index + 1} down`} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40">Move down</button>
+                  <label className="flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1.5 text-sm text-violet-800">
+                    <input type="checkbox" checked={post.active} onChange={(event) => updateCampaignPost(post.id, { active: event.target.checked })} />
+                    Show on homepage
+                  </label>
+                  <button type="button" onClick={() => removeCampaignPost(post.id)} className="rounded-full border border-rose-200 px-3 py-1.5 text-sm text-rose-700">Remove</button>
+                </div>
               </div>
-              <div className="mt-3 flex justify-between text-sm text-slate-600"><span>{settings.campaignFooter}</span><strong>{settings.campaignOffer}</strong></div>
-            </div>
-          </div>
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <select aria-label={`Post ${index + 1} type`} value={post.type} onChange={(event) => updateCampaignPost(post.id, { type: event.target.value as StoreSettings["campaignType"] })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <option>New product</option><option>Promotion</option><option>Awareness day</option><option>Seasonal theme</option><option>Announcement</option>
+                    </select>
+                    <input aria-label={`Post ${index + 1} label`} maxLength={100} value={post.eyebrow} onChange={(event) => updateCampaignPost(post.id, { eyebrow: event.target.value })} placeholder="Post label" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                  </div>
+                  <input aria-label={`Post ${index + 1} title`} maxLength={160} value={post.title} onChange={(event) => updateCampaignPost(post.id, { title: event.target.value })} placeholder="Post title" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                  <textarea aria-label={`Post ${index + 1} description`} maxLength={2000} value={post.description} onChange={(event) => updateCampaignPost(post.id, { description: event.target.value })} placeholder="Description" rows={3} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                  <input aria-label={`Post ${index + 1} link`} maxLength={2000} value={post.link ?? ""} onChange={(event) => updateCampaignPost(post.id, { link: event.target.value })} placeholder="Optional link (e.g. /shop/product or https://...)" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                  <label className="block text-sm font-medium text-slate-700">Post image<input type="file" accept="image/*" onChange={(event) => void handleCampaignImageUpload(post.id, event)} className="mt-2 w-full rounded-2xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm" /></label>
+                  {uploadingCampaignImage ? <p className="text-sm text-slate-500">Uploading post image...</p> : null}
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <input aria-label={`Post ${index + 1} visual`} maxLength={32} value={post.visual} onChange={(event) => updateCampaignPost(post.id, { visual: event.target.value })} placeholder="Emoji visual" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                    <input aria-label={`Post ${index + 1} offer`} maxLength={240} value={post.offer} onChange={(event) => updateCampaignPost(post.id, { offer: event.target.value })} placeholder="Offer text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                    <input aria-label={`Post ${index + 1} footer`} maxLength={240} value={post.footer} onChange={(event) => updateCampaignPost(post.id, { footer: event.target.value })} placeholder="Footer text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-[#fbf7f2] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">{post.eyebrow || "Featured"} · {post.type}</p>
+                  <p className="mt-2 text-xl font-semibold text-slate-900">{post.title || "Post title"}</p>
+                  <p className="mt-2 text-sm text-slate-600">{post.description || "Post description"}</p>
+                  <div className="mt-4 flex h-32 items-center justify-center overflow-hidden rounded-2xl bg-white text-6xl">
+                    {post.imageUrl ? <div aria-label="Post image preview" role="img" className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${post.imageUrl}")` }} /> : post.visual}
+                  </div>
+                  <div className="mt-3 flex justify-between gap-3 text-sm text-slate-600"><span>{post.footer}</span><strong>{post.offer}</strong></div>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
         {feedback ? <p className="mt-4 text-sm text-slate-600">{feedback}</p> : null}
       </section>

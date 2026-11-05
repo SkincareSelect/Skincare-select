@@ -7,10 +7,7 @@ import { useCart } from "@/app/components/cart-provider";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
 import { ProductReviews } from "@/app/components/product-reviews";
-
-function formatPrice(value: number) {
-  return `K${value.toFixed(2)}`;
-}
+import { ProductPrice } from "@/app/components/product-price";
 
 export function ProductDetails({
   product,
@@ -99,8 +96,7 @@ export function ProductDetails({
         <aside className="space-y-6">
           <div className="rounded-[2rem] border border-[#eadfce] bg-white p-8 shadow-sm">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Price</p>
-            <p className="mt-3 text-4xl font-semibold text-slate-900">{formatPrice(product.price)}</p>
-            {product.originalPrice ? <p className="mt-2 text-sm text-slate-400 line-through">{formatPrice(product.originalPrice)}</p> : null}
+            <ProductPrice product={product} className="mt-3 text-4xl font-semibold text-slate-900" originalClassName="text-base text-slate-400" showSavings />
             <p className="mt-4 text-sm text-slate-500">Secure checkout with Zambia-friendly payment methods.</p>
             {sizeOptions ? (
               <div className="mt-5">
@@ -175,7 +171,7 @@ export function ProductDetails({
                 <p className="mt-4 text-sm font-medium text-slate-500">{item.brand ?? "Zhurie & Co"}</p>
                 <h3 className="mt-1 text-lg font-semibold text-slate-900">{item.name}</h3>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-base font-semibold text-slate-900">{formatPrice(item.price)}</span>
+                  <ProductPrice product={item} className="text-base font-semibold text-slate-900" showSavings />
                   <Link href={`/shop/${item.slug}`} className="text-sm font-medium text-[#8d6e63]">
                     View
                   </Link>

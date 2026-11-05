@@ -1,6 +1,8 @@
 import type { Payment, Product, ProductCatalogueResult, Order, StoreSettings } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 import { mapSupabaseProduct } from "@/app/lib/supabase/product-mapper";
+import { mapSupabaseSettings } from "@/app/lib/supabase/settings-mapper";
+import { applyPriceCuts, type PriceCutRecord } from "@/app/lib/price-cut";
 
 export async function fetchProductsFromSupabase(): Promise<ProductCatalogueResult> {
   const supabase = getSupabaseBrowserClient();
@@ -20,7 +22,22 @@ export async function fetchProductsFromSupabase(): Promise<ProductCatalogueResul
     return { products: [], error: "The product catalogue is temporarily unavailable. Please try again later." };
   }
 
-  return { products: data.map((row) => mapSupabaseProduct(row)), error: null };
+  const { data: priceCuts, error: priceCutsError } = await supabase
+    .from("price_cuts")
+    .select("product_id,original_price,discount_percentage,discount_amount,sale_price,is_active")
+    .eq("is_active", true);
+  if (priceCutsError) {
+    console.error("PRICE CUT LOAD ERROR:", priceCutsError);
+    return { products: [], error: "Product prices are temporarily unavailable. Please try again later." };
+  }
+
+  return {
+    products: applyPriceCuts(
+      data.map((row) => mapSupabaseProduct(row)),
+      (priceCuts ?? []) as PriceCutRecord[],
+    ),
+    error: null,
+  };
 }
 
 export async function fetchOrdersFromSupabase() {
@@ -124,12 +141,12 @@ export async function fetchSettingsFromSupabase() {
     return null;
   }
 
-  const { data, error } = await supabase.from("store_settings").select("*").limit(1).single();
+  const { data, error } = await supabase.from("store_settings").select("*").limit(1).maybeSingle();
   if (error || !data) {
     return null;
   }
 
-  return data as StoreSettings;
+  return mapSupabaseSettings(data);
 }
 
 export async function upsertProductToSupabase(product: Product) {
@@ -169,15 +186,15 @@ export async function upsertOrderToSupabase(order: Order) {
 }
 
 export async function upsertSettingsToSupabase(settings: StoreSettings) {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) {
-    return { error: new Error("No Supabase client") };
+  const response = await fetch("/api/admin/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settings }),
+  });
+  if (!response.ok) {
+    const result = (await response.json().catch(() => null)) as { error?: string } | null;
+    return { error: new Error(result?.error ?? `Settings save failed (${response.status}).`) };
   }
 
-  const { data, error } = await supabase.from("store_settings").select("id").limit(1).single();
-  if (error) {
-    return supabase.from("store_settings").insert(settings);
-  }
-
-  return supabase.from("store_settings").update(settings).eq("id", data.id);
+  return { error: null };
 }

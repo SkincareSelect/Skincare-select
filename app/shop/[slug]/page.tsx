@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-server";
 import { ProductDetails } from "./product-details";
+import { getProductPrice } from "@/app/lib/price-cut";
 
 const getCatalogue = cache(fetchProductsFromSupabase);
 
@@ -80,7 +81,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       "@type": "Offer",
       url: productUrl,
       priceCurrency: "ZMW",
-      price: product.price.toFixed(2),
+      price: getProductPrice(product).toFixed(2),
       availability: product.stock > 0
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",

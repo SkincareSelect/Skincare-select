@@ -1,10 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
-
-function formatPrice(value: number) {
-  return `K${value.toFixed(2)}`;
-}
+import { ProductPrice } from "@/app/components/product-price";
 
 export function ProductSection({ products, title = "Featured products", subtitle = "Premium picks chosen for everyday routines." }: { products: Product[]; title?: string; subtitle?: string }) {
   if (products.length === 0) {
@@ -33,7 +30,9 @@ export function ProductSection({ products, title = "Featured products", subtitle
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => {
           const original = product.originalPrice ?? 0;
-          const discount = product.discount ?? (original > product.price ? Math.round(((original - product.price) / original) * 100) : 0);
+          const discount = product.priceCut
+            ? 0
+            : product.discount ?? (original > product.price ? Math.round(((original - product.price) / original) * 100) : 0);
 
           return (
             <article
@@ -61,11 +60,8 @@ export function ProductSection({ products, title = "Featured products", subtitle
               <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
                 <span>{product.category}</span>
               </div>
-              <div className="mt-5 flex items-end justify-between">
-                <div>
-                  <p className="text-lg font-semibold text-slate-900">{formatPrice(product.price)}</p>
-                  {original > product.price ? <p className="text-sm text-slate-400 line-through">{formatPrice(original)}</p> : null}
-                </div>
+              <div className="mt-5 flex items-end justify-between gap-3">
+                <ProductPrice product={product} className="text-lg font-semibold text-slate-900" showSavings />
                 <Link
                   href={`/shop/${product.slug}`}
                   className="inline-flex items-center justify-center rounded-full border border-[#eadfce] bg-[#fbf7f2] px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]"
