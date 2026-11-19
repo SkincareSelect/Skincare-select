@@ -3,6 +3,7 @@ import ProductImageUpload from "@/components/ProductImageUpload";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 import SendDealsButton from "./send-deals-button";
 import { categories } from "@/app/lib/store-data";
+import { shoeSizeSystemLabel } from "@/app/lib/shoe-size";
 
 type AdminProduct = {
   id: string;
@@ -85,7 +86,7 @@ export default async function Products() {
                 <td>{p.category}</td>
                 <td>
                   {p.size_options
-                    ? `${p.size_options.type === "footwear" ? `${p.size_options.system} ` : ""}${p.size_options.available.join(", ")}`
+                    ? `${p.size_options.type === "footwear" ? `${shoeSizeSystemLabel(p.size_options.system) ?? "Shoe"} ` : ""}${p.size_options.available.join(", ")}`
                     : "—"}
                 </td>
                 <td>K{Number(p.price).toFixed(2)}</td>
@@ -214,8 +215,8 @@ function ProductForm({ product }: { product?: AdminProduct }) {
           <label>
             Shoe size system
             <select name="sizeSystem" defaultValue={product?.size_options?.system ?? "EU"}>
-              <option value="EU">EU</option>
-              <option value="US">US</option>
+              <option value="EU">EU (Europe)</option>
+              <option value="US">US (USA)</option>
               <option value="UK">UK</option>
             </select>
           </label>
@@ -229,7 +230,7 @@ function ProductForm({ product }: { product?: AdminProduct }) {
           </label>
         </div>
         <p style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-          Use comma-separated sizes. Apparel uses XS, S, M, L, XL, or XXL. Footwear can use EU, US, or UK sizing. This applies to the Apparel and footwear category.
+          Use comma-separated sizes. Apparel uses XS, S, M, L, XL, or XXL. For footwear, choose EU (Europe), UK, or US (USA) and enter numeric sizes only (for example, 37, 38, 39). This applies to the Apparel and footwear category.
         </p>
       </fieldset>
 

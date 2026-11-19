@@ -7,6 +7,7 @@ import { useAuth } from "@/app/components/auth-provider";
 import { DeliveryLocationPreview } from "@/app/components/delivery-location-preview";
 import { categories, getAnalyticsSummary, getOrders, getPayments, getProducts, getReferralSummary, getSettings, saveOrders, savePayments, saveProducts, saveSettings } from "@/app/lib/store-data";
 import { uploadCampaignImage, uploadProductImage } from "@/app/lib/supabase/client";
+import { formatShoeSize } from "@/app/lib/shoe-size";
 import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
 import type { FeaturedCampaignPost, Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
 
@@ -1019,7 +1020,7 @@ export default function AdminPage() {
               ) : filteredOrders.map((order) => {
                 const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
                 const orderedItems = order.items
-                  .map((item) => `${item.product.name}${item.selectedSize ? ` (${item.sizeSystem ? `${item.sizeSystem} ` : ""}${item.selectedSize})` : ""} x${item.quantity}`)
+                  .map((item) => `${item.product.name}${item.selectedSize ? ` (${formatShoeSize(item.selectedSize, item.sizeSystem)})` : ""} x${item.quantity}`)
                   .join(" • ");
 
                 return (

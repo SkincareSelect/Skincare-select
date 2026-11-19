@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
 import { ProductPrice } from "@/app/components/product-price";
+import { shoeSizeSystemLabel } from "@/app/lib/shoe-size";
 
 export function ProductSection({ products, title = "Featured products", subtitle = "Premium picks chosen for everyday routines." }: { products: Product[]; title?: string; subtitle?: string }) {
   if (products.length === 0) {
@@ -59,7 +60,11 @@ export function ProductSection({ products, title = "Featured products", subtitle
               <p className="mt-3 text-sm leading-6 text-slate-600">{product.shortDescription}</p>
               {product.sizeOptions ? (
                 <p className="mt-2 text-sm text-slate-600">
-                  Available {product.sizeOptions.type === "footwear" ? `shoe sizes (${product.sizeOptions.system})` : "apparel sizes"}:{" "}
+                  Available{" "}
+                  {product.sizeOptions.type === "footwear"
+                    ? `shoe sizes (${shoeSizeSystemLabel(product.sizeOptions.system) ?? "system not set"})`
+                    : "apparel sizes"}
+                  :{" "}
                   <span className="font-medium text-slate-800">{product.sizeOptions.available.join(", ")}</span>
                 </p>
               ) : null}

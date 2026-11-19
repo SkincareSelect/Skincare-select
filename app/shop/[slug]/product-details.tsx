@@ -8,6 +8,7 @@ import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
 import { ProductReviews } from "@/app/components/product-reviews";
 import { ProductPrice } from "@/app/components/product-price";
+import { formatShoeSize, shoeSizeSystemLabel } from "@/app/lib/shoe-size";
 
 export function ProductDetails({
   product,
@@ -101,7 +102,9 @@ export function ProductDetails({
             {sizeOptions ? (
               <div className="mt-5">
                 <label htmlFor="product-size" className="mb-2 block text-sm font-semibold text-slate-700">
-                  {sizeOptions.type === "footwear" ? `Shoe size (${sizeOptions.system})` : "Apparel size"}
+                  {sizeOptions.type === "footwear"
+                    ? `Shoe size (${shoeSizeSystemLabel(sizeOptions.system) ?? "system not set"})`
+                    : "Apparel size"}
                 </label>
                 <select
                   id="product-size"
@@ -112,7 +115,9 @@ export function ProductDetails({
                 >
                   <option value="">Choose a size</option>
                   {sizeOptions.available.map((size) => (
-                    <option key={size} value={size}>{sizeOptions.system ? `${sizeOptions.system} ${size}` : size}</option>
+                    <option key={size} value={size}>
+                      {sizeOptions.type === "footwear" ? formatShoeSize(size, sizeOptions.system) : size}
+                    </option>
                   ))}
                 </select>
                 <p className="mt-2 text-sm text-slate-500">Only sizes currently marked available can be selected.</p>
@@ -143,7 +148,11 @@ export function ProductDetails({
               {product.size ? <p>Size: {product.size}</p> : null}
               {sizeOptions ? (
                 <p>
-                  Available {sizeOptions.type === "footwear" ? `shoe sizes (${sizeOptions.system})` : "apparel sizes"}: {sizeOptions.available.join(", ")}
+                  Available{" "}
+                  {sizeOptions.type === "footwear"
+                    ? `shoe sizes (${shoeSizeSystemLabel(sizeOptions.system) ?? "system not set"})`
+                    : "apparel sizes"}
+                  : {sizeOptions.available.join(", ")}
                 </p>
               ) : null}
               {product.weight ? <p>Weight: {product.weight}</p> : null}

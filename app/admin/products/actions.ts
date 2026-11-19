@@ -92,7 +92,7 @@ export async function saveProduct(formData: FormData) {
       (!isShoeSizeSystem(sizeSystemValue) ||
         available.some((size) => !/^\d{1,3}(?:\.\d)?$/.test(size)))
     ) {
-      throw new Error("Choose EU, US, or UK sizing and enter numeric shoe sizes.");
+      throw new Error("Choose EU (Europe), UK, or US (USA) sizing and enter numeric shoe sizes.");
     }
     if (category !== "Apparel and footwear") {
       throw new Error("Size options are only available for Apparel and footwear products.");

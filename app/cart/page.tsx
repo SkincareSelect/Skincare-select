@@ -5,6 +5,7 @@ import { useCart } from "@/app/components/cart-provider";
 import { getSettings } from "@/app/lib/store-data";
 import { ProductThumb } from "@/app/components/product-thumb";
 import { ProductPrice } from "@/app/components/product-price";
+import { formatShoeSize } from "@/app/lib/shoe-size";
 
 function formatPrice(value: number) {
   return `K${value.toFixed(2)}`;
@@ -41,7 +42,7 @@ export default function CartPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">{item.product.name}</p>
-                    {item.selectedSize ? <p className="text-sm text-slate-600">Size: {item.sizeSystem ? `${item.sizeSystem} ` : ""}{item.selectedSize}</p> : null}
+                    {item.selectedSize ? <p className="text-sm text-slate-600">Size: {formatShoeSize(item.selectedSize, item.sizeSystem)}</p> : null}
                     <div className="text-sm text-slate-500"><ProductPrice product={item.product} className="font-semibold text-slate-900" showSavings /> <span>each</span></div>
                   </div>
                 </div>

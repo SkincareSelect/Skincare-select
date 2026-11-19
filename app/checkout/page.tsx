@@ -14,6 +14,7 @@ import {
 import type { PaymentMethod } from "@/app/lib/types";
 import { getProductPrice } from "@/app/lib/price-cut";
 import { ProductPrice } from "@/app/components/product-price";
+import { formatShoeSize } from "@/app/lib/shoe-size";
 
 const DeliveryLocationPicker = dynamic(
   () => import("@/app/components/delivery-location-picker").then((module) => module.DeliveryLocationPicker),
@@ -227,7 +228,7 @@ export default function CheckoutPage() {
           {confirmation.items.map((item) => (
             <div key={`${item.product_id}-${item.size_system ?? ""}-${item.selected_size ?? ""}`} className="flex items-center justify-between gap-4 rounded-2xl border border-[#eadfce] px-4 py-3 text-sm">
               <div>
-                <p>{item.product_name}{item.selected_size ? ` (${item.size_system ? `${item.size_system} ` : ""}${item.selected_size})` : ""} × {item.quantity}</p>
+                <p>{item.product_name}{item.selected_size ? ` (${formatShoeSize(item.selected_size, item.size_system)})` : ""} × {item.quantity}</p>
                 {item.original_price !== undefined && item.discount_percentage !== undefined && item.discount_percentage > 0 ? (
                   <p className="mt-1 text-xs text-emerald-700">
                     Was {formatPrice(item.original_price)} · {item.discount_percentage}% OFF · Save {formatPrice(item.discount_amount ?? 0)}
@@ -378,7 +379,7 @@ export default function CheckoutPage() {
           {items.map((item) => (
             <div key={`${item.product.id}-${item.sizeSystem ?? ""}-${item.selectedSize ?? ""}`} className="flex items-center justify-between gap-4 rounded-2xl bg-[#fbf7f2] px-4 py-3">
               <div className="min-w-0">
-                <p>{item.product.name}{item.selectedSize ? ` (${item.sizeSystem ? `${item.sizeSystem} ` : ""}${item.selectedSize})` : ""} × {item.quantity}</p>
+                <p>{item.product.name}{item.selectedSize ? ` (${formatShoeSize(item.selectedSize, item.sizeSystem)})` : ""} × {item.quantity}</p>
                 <ProductPrice product={item.product} className="font-semibold text-slate-900" showSavings />
               </div>
               <span className="font-semibold">{formatPrice(getProductPrice(item.product) * item.quantity)}</span>

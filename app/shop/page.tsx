@@ -10,6 +10,7 @@ import { matchesProductSearch } from "@/app/lib/product-search";
 import type { Product, ProductCategory } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
 import { ProductPrice } from "@/app/components/product-price";
+import { shoeSizeSystemLabel } from "@/app/lib/shoe-size";
 
 const arabicPerfumeFilters = [
   "Men",
@@ -308,7 +309,11 @@ export default function ShopPage() {
               <p className="mt-2 text-sm text-slate-600">{product.shortDescription}</p>
               {product.sizeOptions ? (
                 <p className="mt-2 text-sm text-slate-600">
-                  Available {product.sizeOptions.type === "footwear" ? `shoe sizes (${product.sizeOptions.system})` : "apparel sizes"}:{" "}
+                  Available{" "}
+                  {product.sizeOptions.type === "footwear"
+                    ? `shoe sizes (${shoeSizeSystemLabel(product.sizeOptions.system) ?? "system not set"})`
+                    : "apparel sizes"}
+                  :{" "}
                   <span className="font-medium text-slate-800">{product.sizeOptions.available.join(", ")}</span>
                 </p>
               ) : null}
