@@ -23,3 +23,6 @@ to create the profile trigger and admin-only row-level security policies.
 
 ## Supabase setup
 Apply the SQL from [app/lib/supabase/schema.sql](app/lib/supabase/schema.sql) in your Supabase SQL editor.
+For an existing database, also run [supabase/fix-category-check-constraint.sql](supabase/fix-category-check-constraint.sql)
+to update the product category constraint and migrate legacy category values. This is required for products
+in the Apparel and footwear category to save.

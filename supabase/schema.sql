@@ -12,7 +12,16 @@ create table if not exists public.products (
   name text not null,
   slug text unique not null,
   description text not null default '',
-  category text not null check (category in ('Face','Body','Men','Hair')),
+  category text not null check (category in (
+    'Face Care',
+    'Body Care',
+    'Hair Care',
+    'Men''s Grooming',
+    'Apparel and footwear',
+    'Fragrances',
+    'Accessories',
+    'Baby Care'
+  )),
   price numeric(12,2) not null check (price >= 0),
   compare_at_price numeric(12,2),
   stock integer not null default 0 check (stock >= 0),
