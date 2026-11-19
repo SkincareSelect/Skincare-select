@@ -349,11 +349,44 @@ export default function AdminPage() {
   }
 
   const saveProduct = async () => {
+    const category = draftProduct.category ?? "Face Care";
+    const sizeOptions = draftProduct.sizeOptions;
+
+    if (sizeOptions) {
+      if (category !== "Apparel and footwear") {
+        setFeedback("Size options are only available for Apparel and footwear products.");
+        return;
+      }
+      if (
+        sizeOptions.available.length === 0 ||
+        sizeOptions.available.length > 30 ||
+        sizeOptions.available.some((size) => !size || size.length > 12)
+      ) {
+        setFeedback("Enter between 1 and 30 available sizes.");
+        return;
+      }
+      if (
+        sizeOptions.type === "apparel" &&
+        sizeOptions.available.some((size) => !["XS", "S", "M", "L", "XL", "XXL"].includes(size.toUpperCase()))
+      ) {
+        setFeedback("Apparel sizes must be XS, S, M, L, XL, or XXL.");
+        return;
+      }
+      if (
+        sizeOptions.type === "footwear" &&
+        (!["EU", "US", "UK"].includes(String(sizeOptions.system)) ||
+          sizeOptions.available.some((size) => !/^\d{1,3}(?:\.\d)?$/.test(size)))
+      ) {
+        setFeedback("Choose EU (Europe), UK, or US (USA) and enter numeric shoe sizes.");
+        return;
+      }
+    }
+
     const payload: Product = {
       id: editingId ?? crypto.randomUUID(),
       name: draftProduct.name ?? "Untitled product",
       slug: draftProduct.slug ?? (draftProduct.name ?? "untitled").toLowerCase().replace(/\s+/g, "-"),
-      category: draftProduct.category ?? "Face Care",
+      category,
       price: draftProduct.price ?? 0,
       description: draftProduct.description ?? "",
       shortDescription: draftProduct.shortDescription ?? "",
@@ -362,6 +395,7 @@ export default function AdminPage() {
       stock: draftProduct.stock ?? 0,
       image: draftProduct.image ?? "🧴",
       featured: draftProduct.featured ?? false,
+      sizeOptions,
     };
 
     const nextProducts = editingId ? products.map((product) => (product.id === editingId ? payload : product)) : [payload, ...products];
@@ -792,8 +826,11 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">Products</h2>
+          <div className="mt-8 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Products</h2>
+              <p className="mt-1 text-sm text-slate-500">Use New product or Edit to manage apparel and footwear sizes.</p>
+            </div>
             <button type="button" onClick={() => { setEditingId(null); setDraftProduct({}); document.getElementById("product-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white">
               New product
             </button>
@@ -813,6 +850,78 @@ export default function AdminPage() {
                 ))}
               </select>
               <input placeholder="Badge" value={draftProduct.badge ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, badge: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+              <fieldset className="space-y-3 rounded-2xl border border-violet-200 bg-violet-50 p-4">
+                <legend className="px-1 text-sm font-semibold text-violet-900">Apparel and footwear sizes</legend>
+                <label className="block text-sm font-medium text-slate-700">
+                  Size type
+                  <select
+                    value={draftProduct.sizeOptions?.type ?? ""}
+                    onChange={(event) => {
+                      const type = event.target.value as "apparel" | "footwear" | "";
+                      setDraftProduct((current) => {
+                        if (!type) {
+                          return { ...current, sizeOptions: undefined };
+                        }
+                        const existing = current.sizeOptions;
+                        return {
+                          ...current,
+                          sizeOptions: {
+                            type,
+                            system:
+                              type === "footwear"
+                                ? existing?.type === "footwear"
+                                  ? existing.system ?? "EU"
+                                  : "EU"
+                                : undefined,
+                            available: existing?.type === type ? existing.available : [],
+                          },
+                        };
+                      });
+                    }}
+                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  >
+                    <option value="">No size selection</option>
+                    <option value="apparel">Apparel</option>
+                    <option value="footwear">Footwear</option>
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Footwear size system
+                  <select
+                    value={draftProduct.sizeOptions?.system ?? "EU"}
+                    disabled={draftProduct.sizeOptions?.type !== "footwear"}
+                    onChange={(event) => {
+                      const system = event.target.value as "EU" | "UK" | "US";
+                      setDraftProduct((current) => current.sizeOptions?.type === "footwear"
+                        ? { ...current, sizeOptions: { ...current.sizeOptions, system } }
+                        : current);
+                    }}
+                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:bg-slate-100"
+                  >
+                    <option value="EU">EU (Europe)</option>
+                    <option value="UK">UK</option>
+                    <option value="US">US (USA)</option>
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Available sizes
+                  <input
+                    value={draftProduct.sizeOptions?.available.join(", ") ?? ""}
+                    disabled={!draftProduct.sizeOptions}
+                    onChange={(event) => {
+                      const available = event.target.value.split(",").map((size) => size.trim()).filter(Boolean);
+                      setDraftProduct((current) => current.sizeOptions
+                        ? { ...current, sizeOptions: { ...current.sizeOptions, available } }
+                        : current);
+                    }}
+                    placeholder={draftProduct.sizeOptions?.type === "footwear" ? "e.g. 37, 38, 39" : "e.g. XS, S, M, L"}
+                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:bg-slate-100"
+                  />
+                </label>
+                <p className="text-xs leading-5 text-slate-600">
+                  For footwear, choose EU (Europe), UK, or US (USA) and enter numeric sizes only. For apparel, use XS, S, M, L, XL, or XXL.
+                </p>
+              </fieldset>
               <input placeholder="Image emoji" value={draftProduct.image ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, image: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <label className="block text-sm font-medium text-slate-700">Upload product image</label>
               <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full rounded-2xl border border-dashed border-slate-200 px-3 py-2 text-sm" />
@@ -836,9 +945,19 @@ export default function AdminPage() {
                 <div>
                   <p className="font-semibold text-slate-900">{product.name}</p>
                   <p className="text-sm text-slate-500">{product.category} • K{product.price}</p>
+                  {product.sizeOptions ? (
+                    <p className="mt-1 text-sm text-slate-600">
+                      Available sizes:{" "}
+                      {product.sizeOptions.available
+                        .map((size) => product.sizeOptions?.type === "footwear"
+                          ? formatShoeSize(size, product.sizeOptions.system)
+                          : size)
+                        .join(", ")}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => { setEditingId(product.id); setDraftProduct(product); document.getElementById("product-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="rounded-full border border-slate-200 px-3 py-2 text-sm">Edit</button>
+                  <button type="button" onClick={() => { setEditingId(product.id); setDraftProduct(product); document.getElementById("product-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="rounded-full border border-slate-200 px-3 py-2 text-sm">Edit product &amp; sizes</button>
                   <button type="button" onClick={() => deleteProduct(product.id)} className="rounded-full bg-rose-600 px-3 py-2 text-sm text-white">Delete</button>
                 </div>
               </div>

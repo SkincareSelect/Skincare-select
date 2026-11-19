@@ -70,7 +70,6 @@ function toDatabaseProduct(product: Product) {
     shortDescription: product.shortDescription,
     benefits: product.benefits,
     badge: product.badge ?? "",
-    tag: product.badge ?? "",
     stock: product.stock,
     image: product.image,
     images: product.images ?? [],
