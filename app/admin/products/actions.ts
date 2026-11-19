@@ -119,7 +119,6 @@ export async function saveProduct(formData: FormData) {
     originalPrice,
     stock,
     badge: String(formData.get("badge") || "").trim(),
-    tag: String(formData.get("badge") || "").trim(),
     benefits: [],
     image: image || "🧴",
     featured: false,
