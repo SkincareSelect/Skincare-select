@@ -57,6 +57,12 @@ export function ProductSection({ products, title = "Featured products", subtitle
                 ) : null}
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-600">{product.shortDescription}</p>
+              {product.sizeOptions ? (
+                <p className="mt-2 text-sm text-slate-600">
+                  Available {product.sizeOptions.type === "footwear" ? `shoe sizes (${product.sizeOptions.system})` : "apparel sizes"}:{" "}
+                  <span className="font-medium text-slate-800">{product.sizeOptions.available.join(", ")}</span>
+                </p>
+              ) : null}
               <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
                 <span>{product.category}</span>
               </div>

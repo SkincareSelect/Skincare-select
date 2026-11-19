@@ -60,7 +60,7 @@ export default async function Products() {
             <tr>
               <th>Product</th>
               <th>Category</th>
-              <th>Sizes</th>
+              <th>Available sizes</th>
               <th>Price</th>
               <th>Stock</th>
               <th>Status</th>
@@ -201,7 +201,7 @@ function ProductForm({ product }: { product?: AdminProduct }) {
       </div>
 
       <fieldset className="panel">
-        <legend>Size options (optional)</legend>
+        <legend>Apparel and footwear sizes</legend>
         <div className="form-grid">
           <label>
             Item type

@@ -306,6 +306,12 @@ export default function ShopPage() {
               <p className="mt-4 text-sm font-medium text-slate-500">{product.brand ?? "Zhurie & Co"}</p>
               <h2 className="mt-1 text-xl font-semibold text-slate-900">{product.name}</h2>
               <p className="mt-2 text-sm text-slate-600">{product.shortDescription}</p>
+              {product.sizeOptions ? (
+                <p className="mt-2 text-sm text-slate-600">
+                  Available {product.sizeOptions.type === "footwear" ? `shoe sizes (${product.sizeOptions.system})` : "apparel sizes"}:{" "}
+                  <span className="font-medium text-slate-800">{product.sizeOptions.available.join(", ")}</span>
+                </p>
+              ) : null}
               <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-500">
                 {product.benefits.slice(0, 2).map((benefit) => (
                   <span key={benefit} className="rounded-full bg-[#fbf7f2] px-3 py-1">
