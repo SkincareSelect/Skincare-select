@@ -22,6 +22,7 @@ alter table public.products
     'Body Care',
     'Hair Care',
     'Men''s Grooming',
+    'Apparel and footwear',
     'Fragrances',
     'Accessories',
     'Baby Care'
