@@ -1,0 +1,172 @@
+.about {
+  --ink: #211f1b;
+  --muted: #665f55;
+  --ivory: #fbf9f5;
+  --champagne: #d7c6a9;
+  --beige: #eee6da;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--champagne);
+  border-radius: 2rem;
+  background: var(--ivory);
+  color: var(--ink);
+  box-shadow: 0 24px 70px rgba(47, 36, 31, 0.08);
+  animation: about-arrive 650ms ease-out both;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem clamp(1.5rem, 5vw, 4.5rem);
+  border-bottom: 1px solid var(--beige);
+}
+
+.eyebrow,
+.edition,
+.sectionLabel {
+  margin: 0;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--ink);
+}
+
+.edition {
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+
+.story {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(2.5rem, 8vw, 8rem);
+  align-items: center;
+  padding: clamp(3rem, 8vw, 7rem) clamp(1.5rem, 8vw, 7rem);
+}
+
+.titleBlock {
+  max-width: 34rem;
+}
+
+.sectionLabel {
+  margin-bottom: 1.5rem;
+  color: #806d52;
+}
+
+.title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.5rem, 8vw, 7rem);
+  font-weight: 400;
+  letter-spacing: -0.065em;
+  line-height: 0.95;
+}
+
+.title em {
+  color: #806d52;
+  font-weight: 400;
+}
+
+.rule {
+  display: block;
+  width: 4.5rem;
+  height: 1px;
+  margin-top: 2.5rem;
+  background: var(--champagne);
+}
+
+.copy {
+  max-width: 42rem;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.9;
+}
+
+.copy p {
+  margin: 0;
+}
+
+.copy p + p {
+  margin-top: 1.5rem;
+}
+
+.copy .lead {
+  margin-bottom: 1.5rem;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+  line-height: 1.45;
+}
+
+.manifesto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2rem;
+  align-items: end;
+  padding: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 8vw, 7rem);
+  background: var(--ink);
+  color: var(--ivory);
+}
+
+.manifestoText {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  line-height: 1.2;
+}
+
+.signature {
+  margin: 0;
+  color: #e2d2b8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  line-height: 1.5;
+  text-align: right;
+}
+
+.signature strong {
+  font-weight: 600;
+}
+
+@keyframes about-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .story {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .manifesto {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .signature {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about {
+    animation: none;
+  }
+}

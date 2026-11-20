@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Shop curated beauty and skincare",
+  title: "Shop | Zhurie & Co",
   description:
-    "Shop carefully selected skincare, beauty, fragrance and personal-care products from Zhurie & Co in Zambia.",
+    "Explore carefully selected pieces for modern living, from personal care and fragrance to apparel and footwear.",
   alternates: { canonical: "/shop" },
 };
 

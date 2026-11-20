@@ -107,7 +107,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="leading-tight">
               <p className="font-serif text-lg font-semibold tracking-wide text-[#2f241f]">Zhurie <span className="font-normal italic text-[#8d6e63]">&amp; Co</span></p>
-              <p className="text-[10px] uppercase tracking-[0.24em] text-[#8d6e63]">Beauty curated by you &middot; Est. 2026</p>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[#8d6e63]">A Life, Well Curated</p>
             </div>
           </Link>
 
@@ -204,7 +204,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Need help?</p>
               <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                Get personalised product advice from our beauty consultants.
+                Contact us about a product, an order or anything else.
               </p>
               </div>
             </div>
@@ -217,20 +217,20 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#128c4a] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0d713b] sm:w-auto"
               >
               <MessageCircle size={18} fill="currentColor" />
-              WhatsApp consultancy
+              WhatsApp help
               <ChevronUp size={16} className={`transition-transform ${consultancyOpen ? "" : "rotate-180"}`} />
               </button>
               {consultancyOpen ? (
-              <div id="consultancy-options" role="dialog" aria-label="Choose a WhatsApp consultant" className="absolute bottom-full right-0 mb-3 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#eadfce] bg-white p-3 shadow-xl">
+              <div id="consultancy-options" role="dialog" aria-label="Choose a WhatsApp contact" className="absolute bottom-full right-0 mb-3 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#eadfce] bg-white p-3 shadow-xl">
                 <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">
-                  Choose a consultant
+                  Choose a contact
                 </p>
                 {[
-                  { label: "Beauty consultant", number: store.whatsappNumber },
+                  { label: "Product enquiries", number: store.whatsappNumber },
                   { label: "Customer care", number: store.phoneNumber },
                 ].map((consultant) => {
                   const number = consultant.number.replace(/[^0-9]/g, "");
-                  const href = `https://wa.me/${number}?text=${encodeURIComponent("Hi Zhurie & Co, I would like skincare consultancy advice.")}`;
+                  const href = `https://wa.me/${number}?text=${encodeURIComponent("Hi Zhurie & Co, I would like help with a product or order.")}`;
 
                     return (
                       <a
@@ -265,7 +265,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
           <div>
             <p className="text-base font-semibold text-slate-900">{store.storeName} <span className="font-normal text-slate-500">&middot; Est. 2026</span></p>
-            <p className="mt-2 max-w-sm">Premium skincare, beauty, grooming and family care products for Zambia.</p>
+            <p className="mt-2 max-w-sm">
+              A lifestyle brand inspired by elegance, individuality and the beauty of thoughtful choices.
+            </p>
           </div>
           <div>
             <p className="font-semibold text-slate-900">Customer service</p>

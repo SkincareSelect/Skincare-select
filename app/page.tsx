@@ -50,10 +50,10 @@ export default async function HomePage() {
           <div className="flex flex-col justify-center">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#8d6e63]">Zhurie &amp; Co</p>
             <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              YOUR SKIN. YOUR BEAUTY. YOUR SELECT.
+              A LIFE, WELL CURATED.
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              Discover carefully selected skincare, beauty and personal-care products for every member of the family.
+              A lifestyle brand inspired by elegance, individuality and the beauty of thoughtful choices.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/shop" className="rounded-full border border-[#eadfce] bg-[#fbf7f2] px-6 py-3 text-sm font-semibold text-[#2f241f] shadow-sm transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]">
@@ -92,7 +92,7 @@ export default async function HomePage() {
       <section className="scroll-mt-28 space-y-6" id="categories">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Shop by category</p>
-          <h2 className="mt-2 text-3xl font-semibold text-slate-900">Browse the full beauty collection</h2>
+          <h2 className="mt-2 text-3xl font-semibold text-slate-900">Explore thoughtfully selected pieces</h2>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -130,7 +130,7 @@ export default async function HomePage() {
         <ProductSection
           products={featuredProducts}
           title="Featured products"
-          subtitle="Premium favourites for skin, hair, body and grooming."
+          subtitle="Considered pieces for everyday living."
         />
       </section>
 

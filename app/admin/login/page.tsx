@@ -216,7 +216,7 @@ export default function AdminLoginPage() {
             color: "#888",
           }}
         >
-          Zhurie &amp; Co • Beauty curated by you
+          Zhurie &amp; Co • A Life, Well Curated
         </p>
       </div>
     </main>

@@ -19,9 +19,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://zhurieandco.shop"),
-  title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
+  title: "Zhurie & Co | A Life, Well Curated",
   description:
-    "Premium skincare, beauty, grooming, fragrance and personal-care products for women, men and families across Zambia.",
+    "A lifestyle brand inspired by elegance, individuality and the beauty of thoughtful choices.",
   icons: {
     icon: [
       { url: "/zhurie-co-avatar.png", type: "image/png", sizes: "512x512" },
@@ -33,18 +33,18 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Zhurie & Co",
-    title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
+    title: "Zhurie & Co | A Life, Well Curated",
     description:
-      "Discover carefully selected skincare, beauty and personal-care products for every member of the family.",
+      "A lifestyle brand inspired by elegance, individuality and the beauty of thoughtful choices.",
     images: [{ url: "/zhurie-co-avatar.png", width: 512, height: 512, alt: "Zhurie & Co logo" }],
     url: "https://zhurieandco.shop/",
     locale: "en_ZM",
   },
   twitter: {
     card: "summary",
-    title: "Zhurie & Co | Beauty, skincare and personal care in Zambia",
+    title: "Zhurie & Co | A Life, Well Curated",
     description:
-      "Discover carefully selected skincare, beauty and personal-care products for every member of the family.",
+      "A lifestyle brand inspired by elegance, individuality and the beauty of thoughtful choices.",
     images: ["/zhurie-co-avatar.png"],
   },
 };

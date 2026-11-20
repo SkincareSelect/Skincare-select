@@ -165,7 +165,7 @@ export default function ShopPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Shop</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">Shop</h1>
             <p className="mt-3 max-w-2xl text-slate-600">
-              Search by name, brand, category or product type to find the right skincare, beauty or grooming essential.
+              Browse the collection by product name, brand, category or type.
             </p>
             <p className="mt-4 text-sm text-slate-500" aria-live="polite">
               {isLoading
