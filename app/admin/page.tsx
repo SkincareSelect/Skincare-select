@@ -87,6 +87,11 @@ export default function AdminPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCampaignImage, setUploadingCampaignImage] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [productFeedback, setProductFeedback] = useState<{
+    status: "pending" | "success" | "error";
+    message: string;
+  } | null>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [orderFilter, setOrderFilter] = useState<"All" | OrderStatus>("All");
   const [orderSearch, setOrderSearch] = useState("");
   const [orderRange, setOrderRange] = useState<"All" | "Today" | "7 days" | "30 days">("All");
@@ -349,69 +354,110 @@ export default function AdminPage() {
   }
 
   const saveProduct = async () => {
-    const category = draftProduct.category ?? "Face Care";
-    const sizeOptions = draftProduct.sizeOptions;
+    setSavingProduct(true);
+    setProductFeedback({ status: "pending", message: "Saving product to Supabase..." });
 
-    if (sizeOptions) {
-      if (category !== "Apparel and footwear") {
-        setFeedback("Size options are only available for Apparel and footwear products.");
-        return;
-      }
-      if (
-        sizeOptions.available.length === 0 ||
-        sizeOptions.available.length > 30 ||
-        sizeOptions.available.some((size) => !size || size.length > 12)
-      ) {
-        setFeedback("Enter between 1 and 30 available sizes.");
-        return;
-      }
-      if (
-        sizeOptions.type === "apparel" &&
-        sizeOptions.available.some((size) => !["XS", "S", "M", "L", "XL", "XXL"].includes(size.toUpperCase()))
-      ) {
-        setFeedback("Apparel sizes must be XS, S, M, L, XL, or XXL.");
-        return;
-      }
-      if (
-        sizeOptions.type === "footwear" &&
-        (!["EU", "US", "UK"].includes(String(sizeOptions.system)) ||
-          sizeOptions.available.some((size) => !/^\d{1,3}(?:\.\d)?$/.test(size)))
-      ) {
-        setFeedback("Choose EU (Europe), UK, or US (USA) and enter numeric shoe sizes.");
-        return;
-      }
-    }
-
-    const payload: Product = {
-      id: editingId ?? crypto.randomUUID(),
-      name: draftProduct.name ?? "Untitled product",
-      slug: draftProduct.slug ?? (draftProduct.name ?? "untitled").toLowerCase().replace(/\s+/g, "-"),
-      category,
-      price: draftProduct.price ?? 0,
-      description: draftProduct.description ?? "",
-      shortDescription: draftProduct.shortDescription ?? "",
-      benefits: draftProduct.benefits ?? [],
-      badge: draftProduct.badge ?? "NEW",
-      stock: draftProduct.stock ?? 0,
-      image: draftProduct.image ?? "🧴",
-      featured: draftProduct.featured ?? false,
-      sizeOptions,
-    };
-
-    const nextProducts = editingId ? products.map((product) => (product.id === editingId ? payload : product)) : [payload, ...products];
     try {
+      const name = draftProduct.name?.trim() ?? "";
+      if (!name) {
+        setProductFeedback({ status: "error", message: "Enter a product name." });
+        return;
+      }
+
+      const slug = (draftProduct.slug?.trim() || name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+      if (!slug) {
+        setProductFeedback({
+          status: "error",
+          message: "Enter a product name that can be used to create a product link.",
+        });
+        return;
+      }
+
+      const category = draftProduct.category ?? "Face Care";
+      const price = draftProduct.price ?? 0;
+      const stock = draftProduct.stock ?? 0;
+      if (!Number.isFinite(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
+        setProductFeedback({ status: "error", message: "Enter a valid product price and stock quantity." });
+        return;
+      }
+
+      const sizeOptions = draftProduct.sizeOptions;
+      if (sizeOptions) {
+        if (category !== "Apparel and footwear") {
+          setProductFeedback({
+            status: "error",
+            message: "Size options are only available for Apparel and footwear products.",
+          });
+          return;
+        }
+        if (
+          sizeOptions.available.length === 0 ||
+          sizeOptions.available.length > 30 ||
+          sizeOptions.available.some((size) => !size || size.length > 12)
+        ) {
+          setProductFeedback({ status: "error", message: "Enter between 1 and 30 available sizes." });
+          return;
+        }
+        if (
+          sizeOptions.type === "apparel" &&
+          sizeOptions.available.some((size) => !["XS", "S", "M", "L", "XL", "XXL"].includes(size.toUpperCase()))
+        ) {
+          setProductFeedback({ status: "error", message: "Apparel sizes must be XS, S, M, L, XL, or XXL." });
+          return;
+        }
+        if (
+          sizeOptions.type === "footwear" &&
+          (!["EU", "US", "UK"].includes(String(sizeOptions.system)) ||
+            sizeOptions.available.some((size) => !/^\d{1,3}(?:\.\d)?$/.test(size)))
+        ) {
+          setProductFeedback({
+            status: "error",
+            message: "Choose EU (Europe), UK, or US (USA) and enter numeric shoe sizes.",
+          });
+          return;
+        }
+      }
+
+      const payload: Product = {
+        id: editingId ?? crypto.randomUUID(),
+        name,
+        slug,
+        category,
+        price,
+        description: draftProduct.description ?? "",
+        shortDescription: draftProduct.shortDescription ?? "",
+        benefits: draftProduct.benefits ?? [],
+        badge: draftProduct.badge ?? "NEW",
+        stock,
+        image: draftProduct.image ?? "🧴",
+        featured: draftProduct.featured ?? false,
+        sizeOptions,
+      };
+
+      const nextProducts = editingId
+        ? products.map((product) => (product.id === editingId ? payload : product))
+        : [payload, ...products];
       await upsertProductToSupabase(payload);
       setProducts(nextProducts);
       saveProducts(nextProducts);
-      setFeedback("Product saved to Supabase.");
+      setProductFeedback({
+        status: "success",
+        message: editingId ? "Product updated." : "Product saved.",
+      });
+      setDraftProduct({});
+      setEditingId(null);
     } catch (err) {
-      setFeedback(err instanceof Error ? `Could not save product: ${err.message}` : "Could not save product to Supabase.");
+      setProductFeedback({
+        status: "error",
+        message: err instanceof Error ? `Could not save product: ${err.message}` : "Could not save product.",
+      });
       console.error("Supabase upsert error:", err);
-      return;
+    } finally {
+      setSavingProduct(false);
     }
-
-    setDraftProduct({});
-    setEditingId(null);
   };
 
   const deleteProduct = async (id: string) => {
@@ -932,10 +978,31 @@ export default function AdminPage() {
               <textarea placeholder="Short description" value={draftProduct.shortDescription ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, shortDescription: event.target.value }))} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <textarea placeholder="Description" value={draftProduct.description ?? ""} onChange={(event) => setDraftProduct((current) => ({ ...current, description: event.target.value }))} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3" />
               <textarea placeholder="Benefits (comma separated)" value={(draftProduct.benefits ?? []).join(", ")} onChange={(event) => setDraftProduct((current) => ({ ...current, benefits: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) }))} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3" />
-              <button type="button" onClick={saveProduct} className="w-full rounded-full bg-violet-600 px-4 py-3 font-semibold text-white">
-                {editingId ? "Update product" : "Add product"}
+              <button
+                type="button"
+                onClick={saveProduct}
+                disabled={savingProduct}
+                className="w-full rounded-full bg-violet-600 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {savingProduct ? "Saving..." : editingId ? "Update product" : "Add product"}
               </button>
-              {feedback ? <p className="text-sm text-slate-600">{feedback}</p> : null}
+              {productFeedback ? (
+                <p
+                  role={productFeedback.status === "error" ? "alert" : "status"}
+                  aria-live="polite"
+                  className="text-sm"
+                  style={{
+                    color:
+                      productFeedback.status === "success"
+                        ? "#166534"
+                        : productFeedback.status === "error"
+                          ? "var(--danger)"
+                          : "var(--muted)",
+                  }}
+                >
+                  {productFeedback.message}
+                </p>
+              ) : null}
             </div>
           </div>
 
