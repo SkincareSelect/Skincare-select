@@ -107,7 +107,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="leading-tight">
               <p className="font-serif text-lg font-semibold tracking-wide text-[#2f241f]">Zhurie <span className="font-normal italic text-[#8d6e63]">&amp; Co</span></p>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-[#8d6e63]">A Life, Well Curated</p>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[#8d6e63]">Beauty curated by you &middot; Est. 2026</p>
             </div>
           </Link>
 
