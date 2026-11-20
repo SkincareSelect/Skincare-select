@@ -1,7 +1,7 @@
-import { deleteProduct, saveProduct } from "./actions";
-import ProductImageUpload from "@/components/ProductImageUpload";
+import { deleteProduct } from "./actions";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 import SendDealsButton from "./send-deals-button";
+import ProductForm from "./product-form";
 import { categories } from "@/app/lib/store-data";
 import { shoeSizeSystemLabel } from "@/app/lib/shoe-size";
 
@@ -52,7 +52,7 @@ export default async function Products() {
           <b>+ Add a new product</b>
         </summary>
 
-        <ProductForm />
+        <ProductForm categories={categories.map((category) => category.label)} />
       </details>
 
       <div className="table-wrap">
@@ -79,7 +79,10 @@ export default async function Products() {
 
                   <details>
                     <summary>Edit</summary>
-                    <ProductForm product={p} />
+                    <ProductForm
+                      product={p}
+                      categories={categories.map((category) => category.label)}
+                    />
                   </details>
                 </td>
 
@@ -114,150 +117,5 @@ export default async function Products() {
         </table>
       </div>
     </>
-  );
-}
-
-function ProductForm({ product }: { product?: AdminProduct }) {
-  return (
-    <form
-      action={saveProduct}
-      className="admin-form"
-      style={{ marginTop: 15 }}
-    >
-      <input type="hidden" name="id" value={product?.id || ""} />
-
-      <label>
-        Name
-        <input
-          name="name"
-          defaultValue={product?.name}
-          required
-        />
-      </label>
-
-      <label>
-        Description
-        <textarea
-          name="description"
-          defaultValue={product?.description ?? ""}
-        />
-      </label>
-
-      <div className="form-grid">
-        <label>
-          Category
-          <select
-            name="category"
-            defaultValue={product?.category || "Face Care"}
-          >
-            {categories.map((category) => (
-              <option key={category.label} value={category.label}>
-                {category.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Price
-          <input
-            name="price"
-            type="number"
-            step=".01"
-            min="0"
-            defaultValue={product?.price}
-            required
-          />
-        </label>
-
-        <label>
-          Old price
-          <input
-            name="originalPrice"
-            type="number"
-            step=".01"
-            min="0"
-            defaultValue={product?.originalPrice ?? ""}
-          />
-        </label>
-
-        <label>
-          Stock
-          <input
-            name="stock"
-            type="number"
-            min="0"
-            defaultValue={product?.stock || 0}
-            required
-          />
-        </label>
-
-        <label>
-          Badge
-          <input
-            name="badge"
-            defaultValue={product?.badge ?? ""}
-          />
-        </label>
-      </div>
-
-      <fieldset className="panel">
-        <legend>Apparel and footwear sizes</legend>
-        <div className="form-grid">
-          <label>
-            Item type
-            <select name="sizeType" defaultValue={product?.size_options?.type ?? ""}>
-              <option value="">No size selection</option>
-              <option value="apparel">Apparel</option>
-              <option value="footwear">Footwear</option>
-            </select>
-          </label>
-          <label>
-            Shoe size system
-            <select name="sizeSystem" defaultValue={product?.size_options?.system ?? "EU"}>
-              <option value="EU">EU (Europe)</option>
-              <option value="US">US (USA)</option>
-              <option value="UK">UK</option>
-            </select>
-          </label>
-          <label>
-            Available sizes
-            <input
-              name="availableSizes"
-              defaultValue={product?.size_options?.available.join(", ") ?? ""}
-              placeholder={product?.size_options?.type === "footwear" ? "e.g. 38, 39, 40, 41" : "e.g. S, M, L, XL"}
-            />
-          </label>
-        </div>
-        <p style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-          Use comma-separated sizes. Apparel uses XS, S, M, L, XL, or XXL. For footwear, choose EU (Europe), UK, or US (USA) and enter numeric sizes only (for example, 37, 38, 39). This applies to the Apparel and footwear category.
-        </p>
-      </fieldset>
-
-      <ProductImageUpload
-        defaultValue={product?.image || ""}
-      />
-
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <input
-          style={{ width: "auto" }}
-          type="checkbox"
-          name="visible"
-          defaultChecked={!product?.hidden}
-        />
-
-        Visible in store
-      </label>
-
-      <button className="btn btn-primary">
-        Save product
-      </button>
-    </form>
   );
 }

@@ -16,6 +16,11 @@ function isShoeSizeSystem(value: string): value is "EU" | "US" | "UK" {
   return value === "EU" || value === "US" || value === "UK";
 }
 
+export type ProductSaveState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
+
 async function requireProductAdmin() {
   const authClient = await createClient();
   const {
@@ -40,8 +45,22 @@ async function requireProductAdmin() {
   return admin;
 }
 
-export async function saveProduct(formData: FormData) {
-  const admin = await requireProductAdmin();
+export async function saveProduct(
+  previousState: ProductSaveState,
+  formData: FormData,
+): Promise<ProductSaveState> {
+  void previousState;
+
+  let admin: Awaited<ReturnType<typeof requireProductAdmin>>;
+  try {
+    admin = await requireProductAdmin();
+  } catch (error) {
+    if (error instanceof Error) {
+      return { status: "error", message: error.message };
+    }
+    throw error;
+  }
+
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
   const price = Number(formData.get("price"));
@@ -61,17 +80,17 @@ export async function saveProduct(formData: FormData) {
     stock < 0 ||
     !categories.some((item) => item.label === category)
   ) {
-    throw new Error("Enter a valid product name, category, price, and stock quantity.");
+    return { status: "error", message: "Enter a valid product name, category, price, and stock quantity." };
   }
 
   if (originalPrice !== null && (!Number.isFinite(originalPrice) || originalPrice < 0)) {
-    throw new Error("Enter a valid original price.");
+    return { status: "error", message: "Enter a valid original price." };
   }
 
   let sizeOptions: { type: "apparel" | "footwear"; system?: "EU" | "US" | "UK"; available: string[] } | null = null;
   if (sizeTypeValue) {
     if (sizeTypeValue !== "apparel" && sizeTypeValue !== "footwear") {
-      throw new Error("Choose apparel or footwear for size options.");
+      return { status: "error", message: "Choose apparel or footwear for size options." };
     }
     const enteredSizes = availableSizesValue.split(",").map((size) => size.trim()).filter(Boolean);
     const available =
@@ -79,23 +98,23 @@ export async function saveProduct(formData: FormData) {
         ? [...new Set(enteredSizes.map((size) => size.toUpperCase()))]
         : [...new Set(enteredSizes)];
     if (available.length === 0 || available.length > 30 || available.some((size) => size.length > 12)) {
-      throw new Error("Enter between 1 and 30 available sizes, separated by commas.");
+      return { status: "error", message: "Enter between 1 and 30 available sizes, separated by commas." };
     }
     if (
       sizeTypeValue === "apparel" &&
       available.some((size) => !["XS", "S", "M", "L", "XL", "XXL"].includes(size.toUpperCase()))
     ) {
-      throw new Error("Apparel sizes must be XS, S, M, L, XL, or XXL.");
+      return { status: "error", message: "Apparel sizes must be XS, S, M, L, XL, or XXL." };
     }
     if (
       sizeTypeValue === "footwear" &&
       (!isShoeSizeSystem(sizeSystemValue) ||
         available.some((size) => !/^\d{1,3}(?:\.\d)?$/.test(size)))
     ) {
-      throw new Error("Choose EU (Europe), UK, or US (USA) sizing and enter numeric shoe sizes.");
+      return { status: "error", message: "Choose EU (Europe), UK, or US (USA) sizing and enter numeric shoe sizes." };
     }
     if (category !== "Apparel and footwear") {
-      throw new Error("Size options are only available for Apparel and footwear products.");
+      return { status: "error", message: "Size options are only available for Apparel and footwear products." };
     }
     sizeOptions = {
       type: sizeTypeValue,
@@ -103,7 +122,7 @@ export async function saveProduct(formData: FormData) {
       available,
     };
   } else if (availableSizesValue.trim()) {
-    throw new Error("Choose an item type before entering available sizes.");
+    return { status: "error", message: "Choose an item type before entering available sizes." };
   }
 
   const description = String(formData.get("description") || "").trim();
@@ -131,10 +150,10 @@ export async function saveProduct(formData: FormData) {
 
   if (result.error) {
     console.error("PRODUCT SAVE ERROR:", result.error);
-    throw result.error;
+    return { status: "error", message: `Could not save product: ${result.error.message}` };
   }
   if (!result.data) {
-    throw new Error("Product was not found and could not be updated.");
+    return { status: "error", message: "Product was not found and could not be updated." };
   }
 
   revalidatePath("/");
@@ -142,6 +161,7 @@ export async function saveProduct(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath("/admin");
   revalidatePath("/admin/products");
+  return { status: "success", message: id ? "Product updated." : "Product saved." };
 }
 
 export async function deleteProduct(formData: FormData) {
