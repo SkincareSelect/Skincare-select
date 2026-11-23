@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import type { Product } from "@/app/lib/types";
 import { ProductThumb } from "@/app/components/product-thumb";
@@ -126,9 +127,18 @@ export function ProductDetails({
             <button
               onClick={() => addItem(product, sizeOptions ? selectedSize : undefined, selectedSystem)}
               disabled={product.stock < 1 || (Boolean(sizeOptions) && !selectedSize)}
-              className="mt-8 min-h-12 w-full bg-[#111111] px-4 py-3 text-xs font-medium uppercase tracking-[0.13em] text-white transition hover:bg-[#424242] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#111111] px-4 py-3 text-xs font-medium uppercase tracking-[0.13em] text-white transition hover:bg-[#424242] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {product.stock < 1 ? "Out of stock" : sizeOptions && !selectedSize ? "Choose a size" : "Add to bag"}
+              {product.stock < 1 ? (
+                "Out of stock"
+              ) : sizeOptions && !selectedSize ? (
+                "Choose a size"
+              ) : (
+                <>
+                  <ShoppingBag size={15} aria-hidden="true" />
+                  Add to bag
+                </>
+              )}
             </button>
             {product.stock > 0 ? (
               <button

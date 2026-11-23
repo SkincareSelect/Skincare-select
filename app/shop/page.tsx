@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, ShoppingBag } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { categories } from "@/app/lib/store-data";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
@@ -340,10 +340,17 @@ export default function ShopPage() {
                   ) : (
                     <button
                       onClick={() => addItem(product)}
-                      className="min-h-10 bg-[#111111] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-white transition hover:bg-[#424242] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-10 items-center justify-center gap-2 bg-[#111111] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-white transition hover:bg-[#424242] disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={product.stock < 1}
                     >
-                      {product.stock < 1 ? "Out of stock" : "Add to bag"}
+                      {product.stock < 1 ? (
+                        "Out of stock"
+                      ) : (
+                        <>
+                          <ShoppingBag size={14} aria-hidden="true" />
+                          Add to bag
+                        </>
+                      )}
                     </button>
                   )}
               </div>

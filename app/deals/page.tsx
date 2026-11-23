@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/app/components/cart-provider";
 import { fetchProductsFromSupabase } from "@/app/lib/supabase/data-client";
 import type { Product } from "@/app/lib/types";
@@ -97,8 +98,9 @@ export default function DealsPage() {
                   ) : (
                     <button
                       onClick={() => addItem(product)}
-                      className="flex-1 rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89]"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-semibold text-[#2f241f] transition hover:bg-[#c99d89]"
                     >
+                      <ShoppingBag size={15} aria-hidden="true" />
                       Add to bag
                     </button>
                   )}
