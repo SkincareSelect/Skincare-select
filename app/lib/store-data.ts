@@ -41,6 +41,16 @@ export const categories: Array<{
     image: "/images/footwear-clothes-category.jpe",
   },
   {
+    label: "Fragrances",
+    description: "Perfumes, body sprays and scent collections for all occasions, including our Arabic Perfumes collection.",
+    image: "/images/fragrances-category.jpe",
+  },
+  {
+    label: "Accessories",
+    description: "Lip, eye and base products, plus beauty tools and organizers.",
+    image: "/images/accessories-category.jpe",
+  },
+  {
     label: "Baby Care",
     description: "Gentle products for baby skin, bath time and comfort.",
     image: "https://images.unsplash.com/photo-1518200925927-aa63b1e57a84?auto=format&fit=crop&w=800&q=80",
