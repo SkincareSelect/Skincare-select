@@ -39,7 +39,7 @@ export default function AboutPage() {
           Every choice tells a story.
         </p>
         <p className={styles.signature}>
-          <strong>Zhurie &amp; Co — A Life, Well Curated.</strong>
+          <strong>ZHURIE &amp; CO — A LIFE, WELL CURATED.</strong>
         </p>
       </footer>
     </article>

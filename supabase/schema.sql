@@ -13,13 +13,18 @@ create table if not exists public.products (
   slug text unique not null,
   description text not null default '',
   category text not null check (category in (
+    'Fashion',
+    'Footwear',
+    'Fragrances',
+    'Beauty & Personal Care',
+    'Accessories',
+    'Home & Living',
+    'Lifestyle Essentials',
     'Face Care',
     'Body Care',
     'Hair Care',
     'Men''s Grooming',
     'Apparel and footwear',
-    'Fragrances',
-    'Accessories',
     'Baby Care'
   )),
   price numeric(12,2) not null check (price >= 0),
@@ -31,6 +36,15 @@ create table if not exists public.products (
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.newsletter_subscribers (
+  email text primary key check (char_length(email) between 3 and 254),
+  created_at timestamptz not null default now()
+);
+
+alter table public.newsletter_subscribers enable row level security;
+revoke all on table public.newsletter_subscribers from public, anon, authenticated;
+grant all on table public.newsletter_subscribers to service_role;
 
 create table if not exists public.price_cuts (
   id uuid primary key default gen_random_uuid(),

@@ -25,11 +25,11 @@ export function ProductPrice({
       {cut ? (
         <>
           <span className={`${originalClassName} line-through`}>{formatPrice(cut.originalPrice)}</span>
-          <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+          <span className="border border-[#e8e2d8] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-[#424242]">
             {cut.discountPercentage}% OFF
           </span>
           {showSavings ? (
-            <span className="text-xs font-medium text-emerald-700">Save {formatPrice(cut.discountAmount)}</span>
+            <span className="text-xs font-medium text-[#68645e]">Save {formatPrice(cut.discountAmount)}</span>
           ) : null}
         </>
       ) : product.originalPrice && product.originalPrice > product.price ? (

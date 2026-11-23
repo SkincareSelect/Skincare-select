@@ -29,6 +29,12 @@ const arabicPerfumeFilters = [
 
 const genderFilters: string[] = ["Men", "Women", "Unisex"];
 
+const categoryAliases: Partial<Record<ProductCategory, ProductCategory[]>> = {
+  Fashion: ["Apparel and footwear"],
+  Footwear: ["Apparel and footwear"],
+  "Beauty & Personal Care": ["Face Care", "Body Care", "Hair Care", "Men's Grooming", "Baby Care"],
+};
+
 function normalizeCategory(value: string | null): ProductCategory | "All" {
   if (!value) {
     return "All";
@@ -142,7 +148,11 @@ export default function ShopPage() {
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      const matchesCategory = category === "All" || normalizeCategory(product.category) === category;
+      const productCategory = normalizeCategory(product.category);
+      const matchesCategory =
+        category === "All" ||
+        productCategory === category ||
+        (productCategory !== "All" && (categoryAliases[category]?.includes(productCategory) ?? false));
       const matchesQuery = matchesProductSearch(product, query);
       const matchesFilters =
         activeFilters.length === 0 ||
@@ -158,45 +168,45 @@ export default function ShopPage() {
   }, [activeFilters, category, products, query]);
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm sm:p-8">
+    <div className="space-y-10">
+      <section className="border-b border-[#e8e2d8] pb-7 sm:pb-9">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">Shop</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">Shop</h1>
-            <p className="mt-3 max-w-2xl text-slate-600">
-              Browse the collection by product name, brand, category or type.
+            <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#777168]">Zhurie &amp; Co</p>
+            <h1 className="mt-3 text-4xl text-[#111111] sm:text-5xl">The collection</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[#68645e]">
+              Considered pieces for personal style, everyday rituals and modern living.
             </p>
-            <p className="mt-4 text-sm text-slate-500" aria-live="polite">
+            <p className="mt-4 text-xs text-[#777168]" aria-live="polite">
               {isLoading
                 ? "Loading products..."
                 : `Showing ${filteredProducts.length} product${filteredProducts.length === 1 ? "" : "s"}.`}
             </p>
           </div>
           <div className="w-full max-w-md">
-            <label className="mb-2 block text-sm font-medium text-slate-700">Search products</label>
+            <label className="mb-2 block text-xs font-medium text-[#424242]">Find a piece</label>
             <div className="relative">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#777168]" />
               <input
                 type="search"
                 aria-label="Search products"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Try cleanser, perfume, beard oil or baby lotion"
-                className="w-full rounded-full border border-[#eadfce] bg-[#fbf7f2] px-10 py-3 text-slate-900 outline-none transition focus:border-[#8d6e63] focus:bg-white"
+                placeholder="Search by name, brand or category"
+                className="w-full border border-[#d9d3ca] bg-white px-10 py-3 text-sm text-[#111111] outline-none transition placeholder:text-[#8a867f] focus:border-[#111111]"
               />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="scroll-mt-28 flex flex-wrap gap-3" id="categories">
+      <section className="scroll-mt-28 flex gap-2 overflow-x-auto pb-2" id="categories" aria-label="Filter by collection">
         <button
           onClick={() => selectCategory("All")}
           className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
             category === "All"
-              ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
-              : "border-[#eadfce] bg-white text-slate-700 hover:border-[#d8c1b1] hover:bg-[#fbf7f2]"
+              ? "border-[#111111] bg-[#111111] text-white"
+              : "border-[#d9d3ca] bg-transparent text-[#424242] hover:border-[#111111] hover:text-[#111111]"
           }`}
         >
           All
@@ -207,8 +217,8 @@ export default function ShopPage() {
             onClick={() => selectCategory(item.label)}
             className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
               category === item.label
-                ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
-                : "border-[#eadfce] bg-white text-slate-700 hover:border-[#d8c1b1] hover:bg-[#fbf7f2]"
+                ? "border-[#111111] bg-[#111111] text-white"
+                : "border-[#d9d3ca] bg-transparent text-[#424242] hover:border-[#111111] hover:text-[#111111]"
             }`}
           >
             {item.label}
@@ -217,16 +227,16 @@ export default function ShopPage() {
       </section>
 
       {category === "Fragrances" ? (
-        <section className="flex flex-wrap gap-2 rounded-[2rem] border border-[#eadfce] bg-white p-4 shadow-sm" id="arabic-perfume-filters">
-          <span className="mr-2 self-center text-sm font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">Filter Arabic Perfumes</span>
+        <section className="flex flex-wrap gap-2 border-y border-[#e8e2d8] py-4" id="arabic-perfume-filters">
+          <span className="mr-2 self-center text-xs font-medium uppercase tracking-[0.16em] text-[#68645e]">Filter fragrances</span>
           {arabicPerfumeFilters.map((filter) => (
             <button
               key={filter}
               onClick={() => toggleFilter(filter)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                 activeFilters.includes(filter)
-                  ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
-                  : "border-[#eadfce] bg-[#fbf7f2] text-slate-700 hover:border-[#d8c1b1] hover:bg-white"
+                  ? "border-[#111111] bg-[#111111] text-white"
+                  : "border-[#d9d3ca] bg-transparent text-[#424242] hover:border-[#111111]"
               }`}
             >
               {filter}
@@ -235,7 +245,7 @@ export default function ShopPage() {
           {activeFilters.length > 0 ? (
             <button
               onClick={() => setActiveFilters([])}
-              className="rounded-full border border-transparent px-3 py-1.5 text-xs font-medium text-[#8d6e63] underline-offset-2 hover:underline"
+              className="rounded-full border border-transparent px-3 py-1.5 text-xs font-medium text-[#424242] underline-offset-2 hover:underline"
             >
               Clear filters
             </button>
@@ -244,30 +254,30 @@ export default function ShopPage() {
       ) : null}
 
       {category === "Face Care" ? (
-        <section className="flex flex-wrap gap-2 rounded-[2rem] border border-[#eadfce] bg-white p-4 shadow-sm" id="korean-skincare-filters">
-          <span className="mr-2 self-center text-sm font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">Skin type</span>
+        <section className="flex flex-wrap gap-2 border-y border-[#e8e2d8] py-4" id="korean-skincare-filters">
+          <span className="mr-2 self-center text-xs font-medium uppercase tracking-[0.16em] text-[#68645e]">Skin type</span>
           {koreanSkinTypeFilters.map((filter) => (
             <button
               key={filter}
               onClick={() => toggleFilter(filter)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                 activeFilters.includes(filter)
-                  ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
-                  : "border-[#eadfce] bg-[#fbf7f2] text-slate-700 hover:border-[#d8c1b1] hover:bg-white"
+                  ? "border-[#111111] bg-[#111111] text-white"
+                  : "border-[#d9d3ca] bg-transparent text-[#424242] hover:border-[#111111]"
               }`}
             >
               {filter}
             </button>
           ))}
-          <span className="mr-2 ml-4 self-center text-sm font-semibold uppercase tracking-[0.2em] text-[#8d6e63]">Skin concern</span>
+          <span className="mr-2 ml-4 self-center text-xs font-medium uppercase tracking-[0.16em] text-[#68645e]">Skin concern</span>
           {koreanSkinConcernFilters.map((filter) => (
             <button
               key={filter}
               onClick={() => toggleFilter(filter)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                 activeFilters.includes(filter)
-                  ? "border-[#2f241f] bg-[#2f241f] text-white shadow-sm"
-                  : "border-[#eadfce] bg-[#fbf7f2] text-slate-700 hover:border-[#d8c1b1] hover:bg-white"
+                  ? "border-[#111111] bg-[#111111] text-white"
+                  : "border-[#d9d3ca] bg-transparent text-[#424242] hover:border-[#111111]"
               }`}
             >
               {filter}
@@ -276,7 +286,7 @@ export default function ShopPage() {
           {activeFilters.length > 0 ? (
             <button
               onClick={() => setActiveFilters([])}
-              className="rounded-full border border-transparent px-3 py-1.5 text-xs font-medium text-[#8d6e63] underline-offset-2 hover:underline"
+              className="rounded-full border border-transparent px-3 py-1.5 text-xs font-medium text-[#424242] underline-offset-2 hover:underline"
             >
               Clear filters
             </button>
@@ -284,80 +294,72 @@ export default function ShopPage() {
         </section>
       ) : null}
 
-      <div id="products" className="scroll-mt-28 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div id="products" className="scroll-mt-28 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
-          <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm" role="status">
+          <div className="border-y border-[#e8e2d8] p-10 text-center text-sm text-[#68645e]" role="status">
             Loading products...
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <article
               key={product.id}
-              className="group flex flex-col rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#d8c1b1] hover:shadow-md"
+              className="group flex min-w-0 flex-col"
             >
-              <div className="flex items-start justify-between gap-3">
-                <span className="rounded-full bg-[#fbf7f2] px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[#8d6e63]">
-                  {product.badge ?? product.productType ?? "Select"}
-                </span>
-                <span className="text-sm font-medium text-slate-500">{product.category}</span>
+              <div className="relative overflow-hidden bg-[#eeeae2]">
+                <div className="aspect-[4/5]">
+                  <ProductThumb product={product} className="h-full w-full transition-transform duration-500 group-hover:scale-[1.025]" emojiClassName="text-5xl" />
+                </div>
+                {product.badge ? (
+                  <span className="absolute left-3 top-3 border border-white/70 bg-[#f8f6f1]/90 px-2 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-[#111111]">
+                    {product.badge}
+                  </span>
+                ) : null}
               </div>
-              <div className="mt-6 flex h-24 items-center justify-center rounded-[1.5rem] bg-[linear-gradient(135deg,#fff5ef,#f7efe7)] text-5xl">
-                <ProductThumb product={product} className="h-full w-full" emojiClassName="text-5xl" />
-              </div>
-              <p className="mt-4 text-sm font-medium text-slate-500">{product.brand ?? "Zhurie & Co"}</p>
-              <h2 className="mt-1 text-xl font-semibold text-slate-900">{product.name}</h2>
-              <p className="mt-2 text-sm text-slate-600">{product.shortDescription}</p>
+              <p className="mt-4 text-[10px] uppercase tracking-[0.14em] text-[#777168]">{product.brand ?? product.category}</p>
+              <h2 className="mt-1 text-xl leading-snug text-[#111111]">{product.name}</h2>
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#68645e]">{product.shortDescription}</p>
               {product.sizeOptions ? (
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-xs text-[#68645e]">
                   Available{" "}
                   {product.sizeOptions.type === "footwear"
                     ? `shoe sizes (${shoeSizeSystemLabel(product.sizeOptions.system) ?? "system not set"})`
                     : "apparel sizes"}
                   :{" "}
-                  <span className="font-medium text-slate-800">{product.sizeOptions.available.join(", ")}</span>
+                  <span className="font-medium text-[#424242]">{product.sizeOptions.available.join(", ")}</span>
                 </p>
               ) : null}
-              <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-500">
-                {product.benefits.slice(0, 2).map((benefit) => (
-                  <span key={benefit} className="rounded-full bg-[#fbf7f2] px-3 py-1">
-                    {benefit}
-                  </span>
-                ))}
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <ProductPrice product={product} className="text-sm font-medium text-[#111111]" originalClassName="text-xs text-[#777168]" />
+                <span className="text-[10px] text-[#777168]">{product.stock > 0 ? `${product.stock} available` : "Out of stock"}</span>
               </div>
-              <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-                <span>{product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}</span>
-              </div>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <ProductPrice product={product} className="text-lg font-semibold text-slate-900" showSavings />
-                <div className="flex gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href={`/shop/${product.slug}`}
-                    className="inline-flex items-center justify-center rounded-full border border-[#eadfce] bg-[#fbf7f2] px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]"
+                    className="inline-flex min-h-10 items-center justify-center border border-[#d9d3ca] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-[#111111] transition hover:border-[#111111]"
                   >
-                    Details
+                    View details
                   </Link>
                   {product.sizeOptions ? (
                     <Link
                       href={`/shop/${product.slug}`}
-                      className="rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-medium text-[#2f241f] transition hover:bg-[#c99d89]"
+                      className="min-h-10 border border-[#111111] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
                     >
                       Choose size
                     </Link>
                   ) : (
                     <button
                       onClick={() => addItem(product)}
-                      className="rounded-full bg-[#d9b8a7] px-4 py-2 text-sm font-medium text-[#2f241f] transition hover:bg-[#c99d89]"
+                      className="min-h-10 bg-[#111111] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-white transition hover:bg-[#424242] disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={product.stock < 1}
                     >
                       {product.stock < 1 ? "Out of stock" : "Add to bag"}
                     </button>
                   )}
-                </div>
               </div>
             </article>
           ))
         ) : (
-          <div className="rounded-[2rem] border border-[#eadfce] bg-white p-10 text-center text-slate-600 shadow-sm" role={catalogueError ? "alert" : undefined}>
+          <div className="border-y border-[#e8e2d8] p-10 text-center text-sm text-[#68645e]" role={catalogueError ? "alert" : undefined}>
             {catalogueError ?? "No products match your search. Try another keyword or category."}
           </div>
         )}

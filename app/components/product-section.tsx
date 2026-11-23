@@ -7,8 +7,8 @@ import { shoeSizeSystemLabel } from "@/app/lib/shoe-size";
 export function ProductSection({ products, title = "Featured products", subtitle = "Premium picks chosen for everyday routines." }: { products: Product[]; title?: string; subtitle?: string }) {
   if (products.length === 0) {
     return (
-      <section className="rounded-[2rem] border border-[#eadfce] bg-white p-8 shadow-sm">
-        <div className="text-slate-600">No products are available yet. Check back soon.</div>
+      <section className="border-y border-[#e8e2d8] py-8">
+        <div className="text-sm text-[#68645e]">No products are available yet. Check back soon.</div>
       </section>
     );
   }
@@ -17,18 +17,18 @@ export function ProductSection({ products, title = "Featured products", subtitle
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8d6e63]">{title}</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">{subtitle}</h2>
+          <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#777168]">{title}</p>
+          <h2 className="mt-3 text-3xl text-[#111111] sm:text-4xl">{subtitle}</h2>
         </div>
         <Link
           href="/shop"
-          className="inline-flex items-center rounded-full bg-[#2f241f] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f1713]"
+          className="inline-flex min-h-11 items-center border border-[#111111] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
         >
-          View all products
+          View the collection
         </Link>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => {
           const original = product.originalPrice ?? 0;
           const discount = product.priceCut
@@ -38,46 +38,47 @@ export function ProductSection({ products, title = "Featured products", subtitle
           return (
             <article
               key={product.id}
-              className="group overflow-hidden rounded-[2rem] border border-[#eadfce] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#d8c1b1] hover:shadow-md"
+              className="group min-w-0"
             >
-              <div className="flex h-28 items-center justify-center rounded-[1.5rem] bg-[linear-gradient(135deg,#fff5ef,#f7efe7)] text-5xl">
-                <ProductThumb product={product} className="h-full w-full" emojiClassName="text-5xl" />
-              </div>
-              <div className="mt-5 flex flex-wrap items-center gap-2">
+              <Link href={`/shop/${product.slug}`} className="block overflow-hidden bg-[#eeeae2]">
+                <div className="aspect-[4/5]">
+                  <ProductThumb product={product} className="h-full w-full transition-transform duration-500 group-hover:scale-[1.025]" emojiClassName="text-5xl" />
+                </div>
+              </Link>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {product.brand ? <span className="text-[10px] uppercase tracking-[0.14em] text-[#777168]">{product.brand}</span> : null}
                 {product.badge ? (
-                  <span className="rounded-full bg-[#2f241f] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white">
+                  <span className="border border-[#e8e2d8] px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.1em] text-[#424242]">
                     {product.badge}
                   </span>
                 ) : null}
-                {product.brand ? <span className="text-sm font-medium text-slate-500">{product.brand}</span> : null}
               </div>
-              <div className="mt-3 flex items-start justify-between gap-3">
-                <h3 className="text-lg font-semibold text-slate-900">{product.name}</h3>
+              <div className="mt-2 flex items-start justify-between gap-3">
+                <h3 className="text-lg leading-snug text-[#111111]">
+                  <Link href={`/shop/${product.slug}`} className="transition hover:text-[#68645e]">{product.name}</Link>
+                </h3>
                 {discount > 0 ? (
-                  <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">-{discount}%</span>
+                  <span className="shrink-0 border border-[#e8e2d8] px-2 py-0.5 text-[10px] font-medium text-[#424242]">-{discount}%</span>
                 ) : null}
               </div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{product.shortDescription}</p>
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#68645e]">{product.shortDescription}</p>
               {product.sizeOptions ? (
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-xs text-[#68645e]">
                   Available{" "}
                   {product.sizeOptions.type === "footwear"
                     ? `shoe sizes (${shoeSizeSystemLabel(product.sizeOptions.system) ?? "system not set"})`
                     : "apparel sizes"}
                   :{" "}
-                  <span className="font-medium text-slate-800">{product.sizeOptions.available.join(", ")}</span>
+                  <span className="font-medium text-[#424242]">{product.sizeOptions.available.join(", ")}</span>
                 </p>
               ) : null}
-              <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-                <span>{product.category}</span>
-              </div>
-              <div className="mt-5 flex items-end justify-between gap-3">
-                <ProductPrice product={product} className="text-lg font-semibold text-slate-900" showSavings />
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <ProductPrice product={product} className="text-sm font-medium text-[#111111]" originalClassName="text-xs text-[#777168]" />
                 <Link
                   href={`/shop/${product.slug}`}
-                  className="inline-flex items-center justify-center rounded-full border border-[#eadfce] bg-[#fbf7f2] px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#d8c1b1] hover:bg-[#f5ece2]"
+                  className="inline-flex min-h-10 items-center justify-center border border-[#111111] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
                 >
-                  View details
+                  View piece
                 </Link>
               </div>
             </article>

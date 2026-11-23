@@ -79,8 +79,7 @@ export function DeliveryLocationPicker({
   const [message, setMessage] = useState("");
   const lastSearchAt = useRef(0);
 
-  const findAddress = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const findAddress = async () => {
     const query = search.trim();
     if (!query) {
       setMessage("Enter an area, street, landmark, or place name to search.");
@@ -184,22 +183,28 @@ export function DeliveryLocationPicker({
         </p>
       </div>
 
-      <form onSubmit={findAddress} className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <label className="sr-only" htmlFor="delivery-location-search">Search a Zambian location</label>
         <input
           id="delivery-location-search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void findAddress();
+            }
+          }}
           placeholder="e.g. Kabulonga, Lusaka"
           className="min-w-0 flex-1 rounded-xl border border-[#eadfce] px-4 py-3"
         />
-        <button type="submit" disabled={busy} className="rounded-xl border border-[#eadfce] px-4 py-3 text-sm font-semibold text-slate-800 disabled:opacity-60">
+        <button type="button" onClick={() => void findAddress()} disabled={busy} className="rounded-xl border border-[#eadfce] px-4 py-3 text-sm font-semibold text-slate-800 disabled:opacity-60">
           Search map
         </button>
         <button type="button" onClick={useCurrentLocation} disabled={busy} className="rounded-xl bg-[#2f241f] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
           Use my location
         </button>
-      </form>
+      </div>
 
       <div className="h-72 overflow-hidden rounded-2xl border border-[#eadfce]" aria-label="Interactive delivery location map">
         <MapContainer

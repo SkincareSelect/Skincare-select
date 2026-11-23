@@ -1,11 +1,16 @@
 export type ProductCategory =
+  | "Fashion"
+  | "Footwear"
+  | "Fragrances"
+  | "Beauty & Personal Care"
+  | "Accessories"
+  | "Home & Living"
+  | "Lifestyle Essentials"
   | "Face Care"
   | "Body Care"
   | "Hair Care"
   | "Men's Grooming"
   | "Apparel and footwear"
-  | "Fragrances"
-  | "Accessories"
   | "Baby Care";
 
 export type OrderStatus =

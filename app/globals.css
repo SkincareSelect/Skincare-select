@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf7f2;
-  --foreground: #171717;
+  --background: #f8f6f1;
+  --foreground: #111111;
   --surface: #ffffff;
-  --surface-muted: #f7f2eb;
-  --border: #eadfce;
-  --accent: #8d6e63;
-  --accent-soft: #f0e6dd;
-  --accent-strong: #2f241f;
-  --muted: #6f665d;
+  --surface-muted: #eae3d8;
+  --border: #e8e2d8;
+  --accent: #d6c3a5;
+  --accent-soft: #f1ede5;
+  --accent-strong: #111111;
+  --muted: #424242;
 }
 
 @theme inline {
@@ -28,11 +28,19 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(circle at top, rgba(235, 220, 206, 0.45), transparent 28%),
-    linear-gradient(180deg, #fffdfb 0%, #fbf7f2 40%, #f7f1ea 100%);
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.025em;
 }
 
 a {
@@ -50,12 +58,29 @@ a {
 }
 
 :where(button, a[href], [role="button"], input[type="button"], input[type="submit"]):focus-visible {
-  outline: 3px solid rgba(141, 110, 99, 0.65);
+  outline: 2px solid rgba(17, 17, 17, 0.72);
   outline-offset: 3px;
 }
 
 ::selection {
-  background: rgba(141, 110, 99, 0.2);
+  background: rgba(214, 195, 165, 0.5);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .delivery-map-pin {

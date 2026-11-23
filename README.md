@@ -1,6 +1,6 @@
 # Zhurie & Co
 
-A modern beauty ecommerce experience built with Next.js 16, TypeScript, Tailwind CSS, and Supabase.
+A considered lifestyle retail experience built with Next.js 16, TypeScript, Tailwind CSS, and Supabase.
 
 ## Features
 - Beautiful storefront homepage with hero banner
@@ -24,5 +24,8 @@ to create the profile trigger and admin-only row-level security policies.
 ## Supabase setup
 Apply the SQL from [app/lib/supabase/schema.sql](app/lib/supabase/schema.sql) in your Supabase SQL editor.
 For an existing database, also run [supabase/fix-category-check-constraint.sql](supabase/fix-category-check-constraint.sql)
-to update the product category constraint and migrate legacy category values. This is required for products
-in the Apparel and footwear category to save.
+to update the product category constraint and migrate legacy category values. Run
+[supabase/add-lifestyle-product-categories.sql](supabase/add-lifestyle-product-categories.sql) to enable the
+additional lifestyle categories in the product editor. Run
+[supabase/add-newsletter-subscribers.sql](supabase/add-newsletter-subscribers.sql) to enable newsletter sign-ups
+for an existing database.

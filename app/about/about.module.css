@@ -1,16 +1,14 @@
 .about {
-  --ink: #211f1b;
-  --muted: #665f55;
-  --ivory: #fbf9f5;
-  --champagne: #d7c6a9;
-  --beige: #eee6da;
+  --ink: #111111;
+  --muted: #424242;
+  --ivory: #f8f6f1;
+  --champagne: #d6c3a5;
+  --beige: #eae3d8;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid var(--champagne);
-  border-radius: 2rem;
+  border: 1px solid var(--beige);
   background: var(--ivory);
   color: var(--ink);
-  box-shadow: 0 24px 70px rgba(47, 36, 31, 0.08);
   animation: about-arrive 650ms ease-out both;
 }
 
@@ -59,7 +57,7 @@
 
 .sectionLabel {
   margin-bottom: 1.5rem;
-  color: #806d52;
+  color: #6f6658;
 }
 
 .title {
@@ -72,7 +70,7 @@
 }
 
 .title em {
-  color: #806d52;
+  color: #6f6658;
   font-weight: 400;
 }
 
@@ -126,7 +124,7 @@
 
 .signature {
   margin: 0;
-  color: #e2d2b8;
+  color: #d6c3a5;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(1rem, 1.6vw, 1.25rem);
   line-height: 1.5;
