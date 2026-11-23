@@ -137,11 +137,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/cart"
               aria-label={`Shopping bag, ${itemCount} items`}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-[#111111] px-3 text-sm font-medium text-white transition hover:bg-[#424242] sm:px-4"
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d6c3a5] bg-[#eae3d8] px-3 text-sm font-medium text-[#111111] transition hover:bg-[#d6c3a5] sm:px-4"
             >
               <ShoppingBag size={16} />
               <span className="hidden sm:inline">Bag</span>
-              <span className="text-xs text-white/75">{itemCount}</span>
+              <span className="text-xs text-[#424242]">{itemCount}</span>
             </Link>
             <button
               type="button"

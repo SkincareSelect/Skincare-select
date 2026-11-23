@@ -21,8 +21,7 @@ create table if not exists public.products (
     'Fragrances',
     'Accessories',
     'Baby Care',
-    'Home & Living',
-    'Lifestyle Essentials'
+    'Home & Living'
   )),
   price numeric(12,2) not null check (price >= 0),
   compare_at_price numeric(12,2),

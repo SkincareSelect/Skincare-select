@@ -59,7 +59,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#111111]/80 via-[#111111]/48 to-[#111111]/5" />
         <div className="max-w-3xl px-6 py-14 text-white sm:px-12 sm:py-20 lg:px-16 lg:py-24">
           <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-white/80 sm:text-xs">
-            Zhurie &amp; Co · A life, well curated
+            Zhurie &amp; Co · Beauty curated by you
           </p>
           <h1 className="mt-6 max-w-2xl text-5xl leading-[1.05] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
             The Art of

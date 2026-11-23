@@ -60,11 +60,6 @@ export const categories: Array<{
     description: "Considered pieces to make everyday spaces feel more like home.",
     image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
   },
-  {
-    label: "Lifestyle Essentials",
-    description: "Useful, well-made pieces that bring ease to modern living.",
-    image: "/images/accessories-category.jpe",
-  },
 ];
 
 export const validReferralCodes = [

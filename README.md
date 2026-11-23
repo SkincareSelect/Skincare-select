@@ -26,6 +26,6 @@ Apply the SQL from [app/lib/supabase/schema.sql](app/lib/supabase/schema.sql) in
 For an existing database, also run [supabase/fix-category-check-constraint.sql](supabase/fix-category-check-constraint.sql)
 to update the product category constraint and migrate legacy category values. Run
 [supabase/add-lifestyle-product-categories.sql](supabase/add-lifestyle-product-categories.sql) to preserve the existing
-category names while adding Home & Living and Lifestyle Essentials. Run
+category names while adding Home & Living. Run
 [supabase/add-newsletter-subscribers.sql](supabase/add-newsletter-subscribers.sql) to enable newsletter sign-ups
 for an existing database.

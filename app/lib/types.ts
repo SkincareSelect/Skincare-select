@@ -7,8 +7,7 @@ export type ProductCategory =
   | "Fragrances"
   | "Accessories"
   | "Baby Care"
-  | "Home & Living"
-  | "Lifestyle Essentials";
+  | "Home & Living";
 
 export type OrderStatus =
   | "Pending"

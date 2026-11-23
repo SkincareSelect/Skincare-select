@@ -36,8 +36,7 @@ alter table public.products
     'Fragrances',
     'Accessories',
     'Baby Care',
-    'Home & Living',
-    'Lifestyle Essentials'
+    'Home & Living'
   ));
 
 notify pgrst, 'reload schema';
