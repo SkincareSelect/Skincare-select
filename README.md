@@ -25,7 +25,7 @@ to create the profile trigger and admin-only row-level security policies.
 Apply the SQL from [app/lib/supabase/schema.sql](app/lib/supabase/schema.sql) in your Supabase SQL editor.
 For an existing database, also run [supabase/fix-category-check-constraint.sql](supabase/fix-category-check-constraint.sql)
 to update the product category constraint and migrate legacy category values. Run
-[supabase/add-lifestyle-product-categories.sql](supabase/add-lifestyle-product-categories.sql) to enable the
-additional lifestyle categories in the product editor. Run
+[supabase/add-lifestyle-product-categories.sql](supabase/add-lifestyle-product-categories.sql) to preserve the existing
+category names while adding Home & Living and Lifestyle Essentials. Run
 [supabase/add-newsletter-subscribers.sql](supabase/add-newsletter-subscribers.sql) to enable newsletter sign-ups
 for an existing database.

@@ -29,12 +29,6 @@ const arabicPerfumeFilters = [
 
 const genderFilters: string[] = ["Men", "Women", "Unisex"];
 
-const categoryAliases: Partial<Record<ProductCategory, ProductCategory[]>> = {
-  Fashion: ["Apparel and footwear"],
-  Footwear: ["Apparel and footwear"],
-  "Beauty & Personal Care": ["Face Care", "Body Care", "Hair Care", "Men's Grooming", "Baby Care"],
-};
-
 function normalizeCategory(value: string | null): ProductCategory | "All" {
   if (!value) {
     return "All";
@@ -149,10 +143,7 @@ export default function ShopPage() {
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const productCategory = normalizeCategory(product.category);
-      const matchesCategory =
-        category === "All" ||
-        productCategory === category ||
-        (productCategory !== "All" && (categoryAliases[category]?.includes(productCategory) ?? false));
+      const matchesCategory = category === "All" || productCategory === category;
       const matchesQuery = matchesProductSearch(product, query);
       const matchesFilters =
         activeFilters.length === 0 ||

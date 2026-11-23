@@ -16,41 +16,6 @@ export const categories: Array<{
   image: string;
 }> = [
   {
-    label: "Fashion",
-    description: "Considered apparel and personal style for modern living.",
-    image: "/images/footwear-clothes-category.jpe",
-  },
-  {
-    label: "Footwear",
-    description: "Everyday shoes selected for comfort, quality and lasting style.",
-    image: "/images/footwear-clothes-category.jpe",
-  },
-  {
-    label: "Fragrances",
-    description: "Distinctive scents and fragrance collections for every occasion.",
-    image: "/images/fragrances-category.jpe",
-  },
-  {
-    label: "Beauty & Personal Care",
-    description: "Thoughtful personal care and beauty essentials for everyday rituals.",
-    image: "/images/face-care-category.jpe",
-  },
-  {
-    label: "Accessories",
-    description: "Finishing touches and useful details chosen with intention.",
-    image: "/images/accessories-category.jpe",
-  },
-  {
-    label: "Home & Living",
-    description: "Considered pieces to make everyday spaces feel more like home.",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    label: "Lifestyle Essentials",
-    description: "Useful, well-made pieces that bring ease to modern living.",
-    image: "/images/accessories-category.jpe",
-  },
-  {
     label: "Face Care",
     description: "Cleansers, serums, moisturizers and daily skin essentials, including our Korean Skincare (K-beauty) collection.",
     image: "/images/face-care-category.jpe",
@@ -79,6 +44,16 @@ export const categories: Array<{
     label: "Baby Care",
     description: "Gentle products for baby skin, bath time and comfort.",
     image: "https://images.unsplash.com/photo-1518200925927-aa63b1e57a84?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    label: "Home & Living",
+    description: "Considered pieces to make everyday spaces feel more like home.",
+    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    label: "Lifestyle Essentials",
+    description: "Useful, well-made pieces that bring ease to modern living.",
+    image: "/images/accessories-category.jpe",
   },
 ];
 

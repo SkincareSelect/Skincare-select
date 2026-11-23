@@ -1,4 +1,4 @@
--- Add lifestyle categories without changing or removing existing product categories.
+-- Keep existing category labels and add only distinct lifestyle categories.
 do $$
 declare
   category_constraint text;
@@ -18,19 +18,16 @@ $$;
 alter table public.products
   add constraint products_category_check
   check (category in (
-    'Fashion',
-    'Footwear',
-    'Fragrances',
-    'Beauty & Personal Care',
-    'Accessories',
-    'Home & Living',
-    'Lifestyle Essentials',
     'Face Care',
     'Body Care',
     'Hair Care',
     'Men''s Grooming',
     'Apparel and footwear',
-    'Baby Care'
+    'Fragrances',
+    'Accessories',
+    'Baby Care',
+    'Home & Living',
+    'Lifestyle Essentials'
   ));
 
 notify pgrst, 'reload schema';

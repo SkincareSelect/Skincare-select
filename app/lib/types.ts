@@ -1,17 +1,14 @@
 export type ProductCategory =
-  | "Fashion"
-  | "Footwear"
-  | "Fragrances"
-  | "Beauty & Personal Care"
-  | "Accessories"
-  | "Home & Living"
-  | "Lifestyle Essentials"
   | "Face Care"
   | "Body Care"
   | "Hair Care"
   | "Men's Grooming"
   | "Apparel and footwear"
-  | "Baby Care";
+  | "Fragrances"
+  | "Accessories"
+  | "Baby Care"
+  | "Home & Living"
+  | "Lifestyle Essentials";
 
 export type OrderStatus =
   | "Pending"

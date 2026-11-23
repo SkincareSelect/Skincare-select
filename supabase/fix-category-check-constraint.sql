@@ -28,19 +28,16 @@ update public.products set category = 'Accessories' where lower(category) = 'mak
 alter table public.products
   add constraint products_category_check
   check (category in (
-    'Fashion',
-    'Footwear',
-    'Fragrances',
-    'Beauty & Personal Care',
-    'Accessories',
-    'Home & Living',
-    'Lifestyle Essentials',
     'Face Care',
     'Body Care',
     'Hair Care',
     'Men''s Grooming',
     'Apparel and footwear',
-    'Baby Care'
+    'Fragrances',
+    'Accessories',
+    'Baby Care',
+    'Home & Living',
+    'Lifestyle Essentials'
   ));
 
 notify pgrst, 'reload schema';
