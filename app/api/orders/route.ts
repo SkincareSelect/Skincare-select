@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { initialSettings } from "@/app/lib/store-data";
 import { isWithinZambia } from "@/app/lib/zambia-boundary";
 import { calculatePriceCut, roundMoney } from "@/app/lib/price-cut";
+import { sendMail } from "@/lib/mail";
 
 type OrderRequestItem = {
   product_id?: string;
@@ -38,6 +39,16 @@ type OrderRequest = {
 };
 
 const paymentMethods = ["Airtel Money", "Zamtel Money"] as const;
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] ?? character);
+}
 
 export async function POST(request: Request) {
   let body: OrderRequest;
@@ -312,6 +323,59 @@ export async function POST(request: Request) {
       throw paymentError;
     }
 
+    const itemText = items.map((item) => {
+      const size = item.selected_size
+        ? ` (${item.selected_size}${item.size_system ? ` ${item.size_system}` : ""})`
+        : "";
+      return `${item.quantity} x ${item.product_name}${size} — K${(item.price * item.quantity).toFixed(2)}`;
+    }).join("\n");
+    const itemHtml = items.map((item) => {
+      const size = item.selected_size
+        ? ` (${item.selected_size}${item.size_system ? ` ${item.size_system}` : ""})`
+        : "";
+      return `<li>${item.quantity} x ${escapeHtml(item.product_name)}${escapeHtml(size)} — K${(item.price * item.quantity).toFixed(2)}</li>`;
+    }).join("");
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zhurieandco.shop";
+    let notificationSent = false;
+    try {
+      await sendMail({
+        to: initialSettings.storeEmail,
+        subject: `New order ${order.order_number}`,
+        text: [
+          `New order ${order.order_number}`,
+          `Customer: ${customerName}`,
+          `Phone: ${phone}`,
+          email ? `Email: ${email}` : "",
+          `Payment: ${body.payment_method} (reference: ${paymentReference})`,
+          `Delivery: ${deliveryAddress}`,
+          "Items:",
+          itemText,
+          `Total: K${Math.max(0, subtotal + deliveryFee - discount).toFixed(2)}`,
+          `Review order: ${siteUrl}/admin/orders`,
+        ].filter(Boolean).join("\n"),
+        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#1f2937">
+          <h2>New order ${escapeHtml(order.order_number)}</h2>
+          <p>A customer has submitted an order. Payment is pending verification.</p>
+          <p><strong>Customer:</strong> ${escapeHtml(customerName)}<br/>
+          <strong>Phone:</strong> ${escapeHtml(phone)}<br/>
+          ${email ? `<strong>Email:</strong> ${escapeHtml(email)}<br/>` : ""}
+          <strong>Payment:</strong> ${escapeHtml(body.payment_method)}<br/>
+          <strong>Reference:</strong> ${escapeHtml(paymentReference)}</p>
+          <p><strong>Delivery address:</strong><br/>${escapeHtml(deliveryAddress).replace(/\n/g, "<br/>")}</p>
+          <p><strong>Items:</strong></p>
+          <ul>${itemHtml}</ul>
+          <p><strong>Total:</strong> K${Math.max(0, subtotal + deliveryFee - discount).toFixed(2)}</p>
+          <p><a href="${escapeHtml(siteUrl)}/admin/orders">Review order in admin</a></p>
+        </div>`,
+      });
+      notificationSent = true;
+    } catch (notificationError) {
+      console.error("ORDER EMAIL NOTIFICATION ERROR:", {
+        orderNumber: order.order_number,
+        message: notificationError instanceof Error ? notificationError.message : "Unknown email error.",
+      });
+    }
+
     const paymentId = paymentError ? undefined : (
       await supabase
         .from("payments")
@@ -333,6 +397,7 @@ export async function POST(request: Request) {
         delivery_fee: deliveryFee,
         discount,
         total: Math.max(0, subtotal + deliveryFee - discount),
+        email_notification_sent: notificationSent,
     });
   } catch (error) {
     console.error(error);

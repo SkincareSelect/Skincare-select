@@ -67,6 +67,7 @@ type OrderConfirmation = {
   deliveryFee: number;
   discount: number;
   total: number;
+  emailNotificationSent: boolean;
 };
 
 export default function CheckoutPage() {
@@ -170,6 +171,7 @@ export default function CheckoutPage() {
         delivery_fee: number;
         discount: number;
         total: number;
+        email_notification_sent: boolean;
       };
 
       setConfirmation({
@@ -185,6 +187,7 @@ export default function CheckoutPage() {
         deliveryFee: result.delivery_fee,
         discount: result.discount,
         total: result.total,
+        emailNotificationSent: result.email_notification_sent,
       });
       clearCart();
     } catch (error) {
@@ -222,6 +225,15 @@ export default function CheckoutPage() {
             </a>
           </p>
         </div>
+        {!confirmation.emailNotificationSent ? (
+          <p role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Your order was saved, but the store email alert could not be sent automatically. Please contact us at{" "}
+            <a className="font-semibold underline" href={`mailto:${settings.supportEmail || settings.storeEmail}`}>
+              {settings.supportEmail || settings.storeEmail}
+            </a>{" "}
+            to help us process it promptly.
+          </p>
+        ) : null}
 
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
