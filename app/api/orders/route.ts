@@ -260,12 +260,11 @@ export async function POST(request: Request) {
     }).select("id,order_number").single();
     if (error) throw error;
 
-    const { error: itemsError } = await supabase.from("order_items").insert(
-      items.map((item) => ({
+    const orderItemRecords = items.map((item) => ({
         product_id: item.product_id,
         product_name: item.product_name,
         quantity: item.quantity,
-        unit_price: item.price,
+        price: item.price,
         order_id: order.id,
         selected_size: item.selected_size ?? null,
         size_system: item.size_system ?? null,
@@ -273,8 +272,17 @@ export async function POST(request: Request) {
         discount_percentage: item.discount_percentage ?? null,
         discount_amount: item.discount_amount ?? null,
         price_cut_id: item.price_cut_id ?? null,
-      })),
-    );
+    }));
+    let { error: itemsError } = await supabase.from("order_items").insert(orderItemRecords);
+    if (
+      itemsError?.code === "PGRST204" &&
+      itemsError.message.includes("the 'price' column of 'order_items'")
+    ) {
+      const { error } = await supabase.from("order_items").insert(
+        orderItemRecords.map(({ price, ...item }) => ({ ...item, unit_price: price })),
+      );
+      itemsError = error;
+    }
     if (itemsError) throw itemsError;
 
     // Decrement stock now that the order (and its items) have been recorded, so
