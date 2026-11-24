@@ -9,12 +9,12 @@ export async function GET() {
     error: authError,
   } = await sessionClient.auth.getUser();
 
+  if (!user) {
+    return NextResponse.json({ message: "Authentication required." }, { status: 401 });
+  }
   if (authError) {
     console.error("ADMIN ORDERS AUTH ERROR:", authError);
     return NextResponse.json({ message: "Unable to verify administrator access." }, { status: 500 });
-  }
-  if (!user) {
-    return NextResponse.json({ message: "Authentication required." }, { status: 401 });
   }
 
   const admin = createAdminClient();
