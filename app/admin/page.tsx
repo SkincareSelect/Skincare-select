@@ -11,12 +11,13 @@ import { formatShoeSize } from "@/app/lib/shoe-size";
 import { deleteProductFromSupabase, fetchOrdersFromSupabase, fetchPaymentsFromSupabase, fetchProductsFromSupabase, fetchSettingsFromSupabase, upsertOrderToSupabase, upsertProductToSupabase, upsertSettingsToSupabase } from "@/app/lib/supabase/data-client";
 import type { FeaturedCampaignPost, Order, Payment, OrderStatus, PaymentStatus, Product, StoreSettings } from "@/app/lib/types";
 
-const statusOptions: OrderStatus[] = ["Payment Pending", "Payment Confirmed", "Processing", "Ready for Delivery", "Ready for Dispatch", "Dispatched", "Delivered", "Cancelled"];
+const statusOptions: OrderStatus[] = ["Payment Pending", "Payment Confirmed", "Address confirmed", "Processing", "Ready for Delivery", "Ready for Dispatch", "Dispatched", "Delivered", "Cancelled"];
 
 const statusStyles: Record<OrderStatus, string> = {
   Pending: "bg-amber-100 text-amber-700 border-amber-200",
   "Payment Pending": "bg-amber-100 text-amber-700 border-amber-200",
   "Payment Confirmed": "bg-sky-100 text-sky-700 border-sky-200",
+  "Address confirmed": "bg-sky-100 text-sky-700 border-sky-200",
   Processing: "bg-indigo-100 text-indigo-700 border-indigo-200",
   "Ready for Delivery": "bg-violet-100 text-violet-700 border-violet-200",
   "Ready for Dispatch": "bg-cyan-100 text-cyan-700 border-cyan-200",
@@ -50,6 +51,7 @@ const orderStatusCounts = (list: Order[]) => {
     Pending: 0,
     "Payment Pending": 0,
     "Payment Confirmed": 0,
+    "Address confirmed": 0,
     Processing: 0,
     "Ready for Delivery": 0,
     "Ready for Dispatch": 0,
@@ -295,10 +297,8 @@ export default function AdminPage() {
           setProducts([]);
           setFeedback(remoteProducts.error);
         }
-        if (remoteOrders.length > 0) {
-          setOrders(remoteOrders);
-          saveOrders(remoteOrders);
-        }
+        setOrders(remoteOrders);
+        saveOrders(remoteOrders);
         if (remotePayments.length > 0) {
           setPayments(remotePayments);
           savePayments(remotePayments);
@@ -839,7 +839,7 @@ export default function AdminPage() {
         {feedback ? <p className="mt-4 text-sm text-slate-600">{feedback}</p> : null}
       </section>
 
-      <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="rounded-2xl border border-violet-100 bg-violet-50 p-4">
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-violet-600">Marketing analytics</p>

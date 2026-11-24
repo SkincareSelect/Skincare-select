@@ -13,6 +13,7 @@ export type OrderStatus =
   | "Pending"
   | "Payment Pending"
   | "Payment Confirmed"
+  | "Address confirmed"
   | "Processing"
   | "Ready for Delivery"
   | "Ready for Dispatch"

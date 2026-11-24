@@ -1,4 +1,4 @@
-import type { Payment, Product, ProductCatalogueResult, Order, StoreSettings } from "@/app/lib/types";
+import type { OrderStatus, Payment, Product, ProductCatalogueResult, Order, StoreSettings } from "@/app/lib/types";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase/client";
 import { mapSupabaseProduct } from "@/app/lib/supabase/product-mapper";
 import { mapSupabaseSettings } from "@/app/lib/supabase/settings-mapper";
@@ -41,17 +41,61 @@ export async function fetchProductsFromSupabase(): Promise<ProductCatalogueResul
 }
 
 export async function fetchOrdersFromSupabase() {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) {
-    return [] as Order[];
+  type OrderRow = {
+    id: string;
+    order_number: string;
+    customer_name: string;
+    email: string | null;
+    phone: string | null;
+    subtotal: number;
+    delivery_fee: number;
+    total: number;
+    status: string;
+    payment_method: string;
+    payment_reference: string | null;
+    address: string;
+    city: string | null;
+    province: string | null;
+    referral_code: string | null;
+    notes: string | null;
+    created_at: string;
+    order_items: Array<{
+      product_id: string | null;
+      product_name: string;
+      quantity: number;
+      price?: number;
+      unit_price?: number;
+      selected_size?: string | null;
+      size_system?: "EU" | "US" | "UK" | null;
+    }> | null;
+  };
+  const response = await fetch("/api/admin/orders", { cache: "no-store" });
+  const result = await response.json() as { orders?: OrderRow[]; message?: string };
+  if (!response.ok) {
+    throw new Error(result.message ?? "Orders could not be loaded.");
+  }
+  if (!Array.isArray(result.orders)) {
+    throw new Error("The order service returned an invalid response.");
   }
 
-  const { data, error } = await supabase.from("orders").select("*,order_items(*)").order("created_at", { ascending: false });
-  if (error || !data) {
-    return [] as Order[];
-  }
+  const statusMap: Record<string, OrderStatus> = {
+    "Pending payment": "Payment Pending",
+    Paid: "Payment Confirmed",
+    "Address confirmed": "Address confirmed",
+    "Ready for dispatch": "Ready for Dispatch",
+    Pending: "Pending",
+    "Payment Pending": "Payment Pending",
+    "Payment Confirmed": "Payment Confirmed",
+    Processing: "Processing",
+    "Ready for Delivery": "Ready for Delivery",
+    "Ready for Dispatch": "Ready for Dispatch",
+    Dispatched: "Dispatched",
+    Delivered: "Delivered",
+    Cancelled: "Cancelled",
+    Refunded: "Refunded",
+  };
 
-  return data.map((row) => ({
+  return result.orders.map((row) => ({
     id: row.id,
     orderNumber: row.order_number,
     customerName: row.customer_name,
@@ -89,7 +133,7 @@ export async function fetchOrdersFromSupabase() {
     deliveryFee: Number(row.delivery_fee) || 0,
     discount: 0,
     total: Number(row.total) || 0,
-    status: row.status,
+    status: statusMap[row.status],
     paymentMethod: row.payment_method,
     paymentStatus: "pending",
     paymentReference: row.payment_reference ?? undefined,
@@ -98,7 +142,12 @@ export async function fetchOrdersFromSupabase() {
     referralCode: row.referral_code ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
-  })) as Order[];
+  })).map((order) => {
+    if (!order.status) {
+      throw new Error("An order has an unsupported status.");
+    }
+    return order;
+  }) as Order[];
 }
 
 export async function fetchPaymentsFromSupabase() {
