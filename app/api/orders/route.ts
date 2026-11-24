@@ -256,15 +256,16 @@ export async function POST(request: Request) {
       delivery_method: typeof body.delivery_method === "string" ? body.delivery_method.trim().slice(0, 80) : "Standard delivery",
       delivery_fee: deliveryFee, payment_method: body.payment_method || "Airtel Money", subtotal,
       payment_reference: paymentReference,
-      delivery_latitude: latitude,
-      delivery_longitude: longitude,
-      total: Math.max(0, subtotal + deliveryFee - discount), status: "Payment Pending"
+      total: Math.max(0, subtotal + deliveryFee - discount), status: "Pending payment"
     }).select("id,order_number").single();
     if (error) throw error;
 
     const { error: itemsError } = await supabase.from("order_items").insert(
       items.map((item) => ({
-        ...item,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.price,
         order_id: order.id,
         selected_size: item.selected_size ?? null,
         size_system: item.size_system ?? null,
@@ -315,6 +316,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
         order_id: order.id,
         order_number: order.order_number,
+        delivery_latitude: latitude,
+        delivery_longitude: longitude,
         payment_id: paymentId,
         payment_reference: paymentReference,
         items,
